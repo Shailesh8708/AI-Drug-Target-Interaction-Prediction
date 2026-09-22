@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.DS_Store
+*.pyc
+__pycache__/
+.venv/
+models/*.pkl
+models/*.joblib
+data/raw/*
+!data/raw/.gitkeep
