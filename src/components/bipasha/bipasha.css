@@ -1,0 +1,1502 @@
+/* ==========================================================================
+   BIPASHA MAM — 3D SCIENTIFIC AI AGENT STYLESHEET
+   Futuristic laboratory glassmorphism, 3D Canvas orb positioning,
+   cinematic loading transitions, and domain-specific animations.
+   ========================================================================== */
+
+:root {
+  --bipasha-green: #10b981;
+  --bipasha-green-bright: #34d399;
+  --bipasha-green-deep: #065f46;
+  --bipasha-green-glow: rgba(16, 185, 129, 0.45);
+  --bipasha-green-soft: rgba(52, 211, 153, 0.15);
+  --bipasha-blue: #38bdf8;
+  --bipasha-orange: #f59e0b;
+  --bipasha-red: #ef4444;
+  --bipasha-pink: #ec4899;
+  --bipasha-purple: #a855f7;
+  --bipasha-dark-bg: rgba(15, 23, 42, 0.88);
+  --bipasha-glass-border: rgba(110, 231, 183, 0.28);
+  --bipasha-glass-shadow: 0 20px 50px rgba(6, 78, 59, 0.25), 0 0 30px rgba(16, 185, 129, 0.12);
+}
+
+/* --------------------------------------------------------------------------
+   1. FIXED POSITIONING & ROOT CONTAINER
+   -------------------------------------------------------------------------- */
+.bipasha-agent-root {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none; /* children enable pointer events */
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* --------------------------------------------------------------------------
+   2. 3D AI ORB TRIGGER
+   -------------------------------------------------------------------------- */
+.bipasha-orb-wrapper {
+  position: relative;
+  pointer-events: auto;
+  user-select: none;
+  animation: orb-gentle-float 5.2s ease-in-out infinite;
+}
+
+.bipasha-orb-button {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #064e3b 0%, #022c22 65%, #01140e 100%);
+  border: 1.5px solid rgba(110, 231, 183, 0.4);
+  box-shadow:
+    0 10px 30px rgba(2, 44, 34, 0.6),
+    0 0 25px var(--bipasha-green-glow),
+    inset 0 0 16px rgba(52, 211, 153, 0.35);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  outline: none;
+  padding: 0;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.bipasha-orb-button:hover,
+.bipasha-orb-button:focus-visible {
+  transform: scale(1.08);
+  border-color: rgba(167, 243, 208, 0.85);
+  box-shadow:
+    0 14px 40px rgba(2, 44, 34, 0.8),
+    0 0 45px rgba(52, 211, 153, 0.65),
+    inset 0 0 20px rgba(110, 231, 183, 0.55);
+}
+
+.bipasha-orb-button:active {
+  transform: scale(0.96);
+}
+
+/* Outer Volumetric Halo Aura */
+.orb-halo-aura {
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.28) 0%, rgba(16, 185, 129, 0.08) 50%, transparent 75%);
+  pointer-events: none;
+  animation: aura-breathe 4s ease-in-out infinite;
+}
+
+/* 3D Cyber Orbital Rings */
+.orb-cyber-ring {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.ring-primary {
+  inset: -6px;
+  border: 1px dashed rgba(110, 231, 183, 0.5);
+  animation: cyber-ring-spin 14s linear infinite;
+}
+
+.ring-secondary {
+  inset: -14px;
+  border: 1px dotted rgba(56, 189, 248, 0.35);
+  animation: cyber-ring-spin 22s linear infinite reverse;
+}
+
+/* Radar Scan Sweep Line */
+.orb-scan-arc {
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0deg, rgba(52, 211, 153, 0.45) 60deg, transparent 90deg);
+  animation: radar-sweep-rotate 3.8s linear infinite;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* 3D Canvas Molecular Simulation */
+.orb-3d-canvas {
+  position: relative;
+  z-index: 2;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Energy Ripple on Activation */
+.orb-click-ripple {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid #6ee7b7;
+  animation: click-ripple-expand 0.7s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+  pointer-events: none;
+}
+
+/* Status Indicator Pip */
+.orb-status-pip {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #022c22;
+  border: 1.5px solid #065f46;
+  display: grid;
+  place-items: center;
+  z-index: 3;
+}
+
+.pip-core {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bipasha-green-bright);
+  box-shadow: 0 0 8px var(--bipasha-green-bright);
+}
+
+.state-thinking .pip-core {
+  background: var(--bipasha-blue);
+  box-shadow: 0 0 10px var(--bipasha-blue);
+  animation: pip-blink 0.5s ease-in-out infinite;
+}
+
+.state-navigating .pip-core {
+  background: #34d399;
+  box-shadow: 0 0 12px #34d399;
+  animation: pip-blink 0.4s ease-in-out infinite;
+}
+
+.state-error .pip-core {
+  background: var(--bipasha-red);
+  box-shadow: 0 0 10px var(--bipasha-red);
+}
+
+/* Tooltip on Hover */
+.bipasha-orb-tooltip {
+  position: absolute;
+  right: 92px;
+  top: 50%;
+  transform: translateY(-50%) translateX(8px);
+  opacity: 0;
+  pointer-events: none;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(110, 231, 183, 0.3);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), 0 0 15px rgba(16, 185, 129, 0.2);
+  padding: 9px 14px;
+  border-radius: 6px;
+  white-space: nowrap;
+  color: #fff;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 10;
+}
+
+.bipasha-orb-tooltip.visible {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+.tooltip-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font: 500 8px 'DM Mono', monospace;
+  color: #6ee7b7;
+  letter-spacing: 0.1em;
+  margin-bottom: 2px;
+}
+
+.tooltip-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.bipasha-orb-tooltip strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.bipasha-orb-tooltip small {
+  display: block;
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+
+/* --------------------------------------------------------------------------
+   3. EXPANDED AGENT PANEL (GLASSMORPHISM)
+   -------------------------------------------------------------------------- */
+.bipasha-panel-container {
+  position: absolute;
+  bottom: 92px;
+  right: 0;
+  width: 440px;
+  max-width: calc(100vw - 36px);
+  height: 610px;
+  max-height: calc(100vh - 120px);
+  pointer-events: auto;
+  animation: panel-emerge-3d 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: bottom right;
+}
+
+.bipasha-panel-container.expanded-full {
+  width: 540px;
+  height: 720px;
+}
+
+.bipasha-panel-glass {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, rgba(15, 28, 23, 0.95) 0%, rgba(9, 18, 14, 0.96) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--bipasha-glass-border);
+  box-shadow: var(--bipasha-glass-shadow);
+  border-radius: 12px;
+  overflow: hidden;
+  color: #f1f5f9;
+}
+
+/* Panel Header */
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: rgba(16, 185, 129, 0.04);
+  border-bottom: 1px solid rgba(110, 231, 183, 0.15);
+}
+
+.panel-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.panel-agent-orb {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #34d399 0%, #059669 70%, #022c22 100%);
+  box-shadow: 0 0 14px rgba(52, 211, 153, 0.6);
+  display: grid;
+  place-items: center;
+}
+
+.panel-orb-core {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 8px #ffffff;
+}
+
+.panel-orb-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px dashed rgba(167, 243, 208, 0.6);
+  animation: cyber-ring-spin 8s linear infinite;
+}
+
+.identity-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-agent-name {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.01em;
+}
+
+.agent-status-tag {
+  padding: 2px 6px;
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  border-radius: 4px;
+  font: 600 8px 'DM Mono', monospace;
+  color: #6ee7b7;
+  letter-spacing: 0.08em;
+}
+
+.panel-agent-subtitle {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.panel-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.panel-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(110, 231, 183, 0.4);
+}
+
+/* Tabs Bar */
+.panel-tabs-bar {
+  display: flex;
+  padding: 8px 16px 0;
+  background: rgba(0, 0, 0, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  gap: 6px;
+}
+
+.panel-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.panel-tab-btn:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.panel-tab-btn.active {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.08);
+  border-bottom-color: #34d399;
+}
+
+.tab-pill {
+  padding: 1px 5px;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  font: 600 9px 'DM Mono', monospace;
+}
+
+/* Scroll Content */
+.panel-scroll-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 18px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(52, 211, 153, 0.3) transparent;
+}
+
+.panel-scroll-content::-webkit-scrollbar {
+  width: 5px;
+}
+.panel-scroll-content::-webkit-scrollbar-thumb {
+  background: rgba(52, 211, 153, 0.3);
+  border-radius: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   4. CONTEXT GREETING CARD
+   -------------------------------------------------------------------------- */
+.bipasha-greeting-card {
+  padding: 14px 16px;
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(52, 211, 153, 0.22);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.greeting-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.greeting-avatar {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #064e3b;
+  display: grid;
+  place-items: center;
+}
+
+.avatar-pulse {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid rgba(52, 211, 153, 0.6);
+  animation: aura-breathe 2s ease-in-out infinite;
+}
+
+.avatar-core {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34d399;
+}
+
+.greeting-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font: 500 8px 'DM Mono', monospace;
+  color: #6ee7b7;
+  letter-spacing: 0.1em;
+}
+
+.pulse-dot-green {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 6px #34d399;
+}
+
+.greeting-title {
+  margin: 3px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.35;
+}
+
+.greeting-subtext {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.greeting-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.quick-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 500 9px 'DM Mono', monospace;
+  color: #6ee7b7;
+}
+
+.quick-chips-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.context-quick-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(110, 231, 183, 0.25);
+  color: #e2e8f0;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.context-quick-chip:hover {
+  background: rgba(16, 185, 129, 0.25);
+  color: #ffffff;
+  border-color: #34d399;
+  transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   5. FEATURE GRID LAUNCHER (10 MODULES)
+   -------------------------------------------------------------------------- */
+.bipasha-feature-grid-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feature-grid-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font: 500 9px 'DM Mono', monospace;
+  color: #6ee7b7;
+  letter-spacing: 0.08em;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.category-title {
+  margin: 0 0 8px;
+  font: 600 10px 'DM Mono', monospace;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.actions-subgrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.bipasha-action-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #f1f5f9;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.22s ease;
+  overflow: hidden;
+}
+
+.bipasha-action-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--accent-color, #10b981);
+  opacity: 0.6;
+  transition: opacity 0.2s ease, width 0.2s ease;
+}
+
+.bipasha-action-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--accent-color, #10b981);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.bipasha-action-card:hover::before {
+  opacity: 1;
+  width: 4px;
+}
+
+.bipasha-action-card.is-active {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(52, 211, 153, 0.5);
+}
+
+.card-top-meta {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.card-icon-bubble {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent-color, #10b981);
+}
+
+.card-badge {
+  font: 500 8px 'DM Mono', monospace;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  letter-spacing: 0.06em;
+}
+
+.hover-arrow {
+  color: #64748b;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: all 0.2s ease;
+}
+
+.bipasha-action-card:hover .hover-arrow {
+  opacity: 1;
+  color: var(--accent-color, #10b981);
+  transform: translateX(0);
+}
+
+.card-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-bottom: 3px;
+}
+
+.card-description {
+  margin: 0;
+  font-size: 9.5px;
+  color: #94a3b8;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.active-glow-pip {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 8px #34d399;
+}
+
+/* --------------------------------------------------------------------------
+   6. RESEARCH CHAT SYSTEM
+   -------------------------------------------------------------------------- */
+.chat-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chat-messages-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.chat-bubble-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.chat-bubble-row.user {
+  flex-direction: row-reverse;
+}
+
+.chat-avatar-mini {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981, #065f46);
+  color: #ffffff;
+  font: 700 8.5px 'DM Mono', monospace;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.chat-bubble {
+  max-width: 82%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.chat-bubble-row.bipasha .chat-bubble {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(110, 231, 183, 0.2);
+  color: #e2e8f0;
+}
+
+.chat-bubble-row.user .chat-bubble {
+  background: #10b981;
+  color: #022c22;
+  font-weight: 500;
+}
+
+.bubble-text {
+  margin: 0;
+}
+
+.bubble-subtext {
+  display: block;
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.bubble-timestamp {
+  display: block;
+  margin-top: 5px;
+  font: 500 8px 'DM Mono', monospace;
+  color: #64748b;
+  text-align: right;
+}
+
+.chat-bubble-row.user .bubble-timestamp {
+  color: rgba(2, 44, 34, 0.7);
+}
+
+.bubble-action-launch {
+  margin-top: 8px;
+}
+
+.launch-direct-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(16, 185, 129, 0.25);
+  border: 1px solid #34d399;
+  border-radius: 5px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.launch-direct-btn:hover {
+  background: #10b981;
+  color: #022c22;
+}
+
+.bubble-suggestions-wrap {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.suggestion-chip {
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  font-size: 9.5px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.suggestion-chip:hover {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  border-color: #34d399;
+}
+
+/* Typing Dots Animation */
+.typing-dots {
+  display: flex;
+  gap: 4px;
+  padding: 4px 2px;
+}
+
+.typing-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #34d399;
+  animation: typing-bounce 1.2s infinite ease-in-out;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* --------------------------------------------------------------------------
+   7. SAFETY GUARDRAILS TAB
+   -------------------------------------------------------------------------- */
+.safety-card {
+  padding: 16px;
+  background: rgba(239, 68, 68, 0.03);
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  border-radius: 8px;
+}
+
+.safety-title-lockup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.safety-title-lockup h4 {
+  margin: 0;
+  font-size: 13px;
+  color: #f87171;
+}
+
+.shield-icon {
+  color: #ef4444;
+}
+
+.safety-card p {
+  font-size: 11px;
+  color: #cbd5e1;
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+
+.safety-rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.rule-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+}
+
+.rule-badge {
+  padding: 2px 5px;
+  border-radius: 3px;
+  font: 700 8px 'DM Mono', monospace;
+  letter-spacing: 0.05em;
+  flex: 0 0 auto;
+}
+
+.rule-badge.red {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.rule-badge.amber {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.rule-badge.green {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.rule-item strong {
+  display: block;
+  font-size: 11px;
+  color: #f1f5f9;
+}
+
+.rule-item small {
+  display: block;
+  font-size: 9.5px;
+  color: #94a3b8;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.disclaimer-callout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(16, 185, 129, 0.08);
+  border-left: 3px solid #10b981;
+  color: #a7f3d0;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+/* --------------------------------------------------------------------------
+   8. PANEL FOOTER INPUT
+   -------------------------------------------------------------------------- */
+.panel-footer-input {
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.25);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(110, 231, 183, 0.25);
+  border-radius: 8px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-wrap:focus-within {
+  border-color: #34d399;
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.2);
+}
+
+.sparkle-decor {
+  color: #34d399;
+  flex: 0 0 auto;
+}
+
+.chat-input-field {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: #f8fafc;
+  font-size: 11.5px;
+  min-width: 0;
+}
+
+.chat-input-field::placeholder {
+  color: #64748b;
+}
+
+.send-message-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+  background: #10b981;
+  border: 0;
+  color: #022c22;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.send-message-btn:hover:not(:disabled) {
+  background: #34d399;
+  transform: translateY(-1px);
+}
+
+.send-message-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.1);
+  color: #64748b;
+}
+
+/* --------------------------------------------------------------------------
+   9. CINEMATIC STAGED LOADING OVERLAY
+   -------------------------------------------------------------------------- */
+.bipasha-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.88) 0%, rgba(2, 6, 23, 0.96) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  pointer-events: auto;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.bipasha-loading-card {
+  width: 580px;
+  max-width: 100%;
+  background: linear-gradient(135deg, rgba(17, 34, 28, 0.94) 0%, rgba(10, 22, 17, 0.98) 100%);
+  border: 1.5px solid rgba(110, 231, 183, 0.35);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(16, 185, 129, 0.25);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: scaleUpIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.loading-card-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 12px;
+}
+
+.loading-mini-orb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #34d399, #059669);
+  box-shadow: 0 0 12px #34d399;
+  animation: aura-breathe 2s infinite ease-in-out;
+}
+
+.agent-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.agent-identity strong {
+  display: block;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  color: #f1f5f9;
+}
+
+.agent-identity small {
+  display: block;
+  font: 500 8.5px 'DM Mono', monospace;
+  color: #6ee7b7;
+  letter-spacing: 0.05em;
+}
+
+.loading-action-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge-tag {
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  font: 600 8px 'DM Mono', monospace;
+  color: #94a3b8;
+}
+
+.badge-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #34d399;
+}
+
+.loading-animation-stage {
+  height: 180px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(110, 231, 183, 0.15);
+  border-radius: 8px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.domain-anim {
+  width: 100%;
+  height: 100%;
+}
+
+.domain-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   10. STAGED SCIENTIFIC PROGRESS BAR
+   -------------------------------------------------------------------------- */
+.bipasha-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.progress-header-readout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stage-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 8px #34d399;
+  animation: pip-blink 1s ease-in-out infinite;
+}
+
+.stage-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.progress-numeric-badge {
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.progress-num {
+  font: 700 12px 'DM Mono', monospace;
+  color: #34d399;
+}
+
+.progress-track-shell {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.progress-fill-bar {
+  height: 100%;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #059669, #10b981, #34d399);
+  box-shadow: 0 0 14px rgba(52, 211, 153, 0.5);
+  transition: width 0.1s linear;
+  position: relative;
+}
+
+.progress-scan-glint {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 25px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+  animation: glint-sweep 1.4s ease-in-out infinite;
+}
+
+.milestone-notch {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(15, 23, 42, 0.8);
+  pointer-events: none;
+}
+
+.progress-milestones {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.milestone-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.step-indicator {
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  transition: background 0.3s ease;
+}
+
+.milestone-step.passed .step-indicator {
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.milestone-step.current .step-indicator {
+  background: #34d399;
+}
+
+.milestone-step small {
+  font: 500 8px 'DM Mono', monospace;
+  color: #64748b;
+  text-align: center;
+}
+
+.milestone-step.passed small {
+  color: #34d399;
+}
+
+.progress-subtext {
+  margin: 0;
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.progress-telemetry-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  font: 500 8px 'DM Mono', monospace;
+  color: #64748b;
+  letter-spacing: 0.06em;
+}
+
+.loading-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+}
+
+.loading-cancel-btn,
+.loading-skip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.loading-cancel-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+}
+
+.loading-cancel-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #fca5a5;
+}
+
+.loading-skip-btn {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  color: #34d399;
+}
+
+.loading-skip-btn:hover {
+  background: #10b981;
+  color: #022c22;
+  border-color: #10b981;
+}
+
+.safety-guarantee-note {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font: 500 8.5px 'DM Mono', monospace;
+  color: #6ee7b7;
+}
+
+/* --------------------------------------------------------------------------
+   11. KEYFRAME ANIMATIONS
+   -------------------------------------------------------------------------- */
+@keyframes orb-gentle-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes aura-breathe {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes cyber-ring-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes radar-sweep-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes click-ripple-expand {
+  0% {
+    transform: scale(0.85);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.95);
+    opacity: 0;
+  }
+}
+
+@keyframes pip-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes panel-emerge-3d {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes typing-bounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes glint-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleUpIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   12. ACCESSIBILITY & PREFERS-REDUCED-MOTION
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .bipasha-orb-wrapper,
+  .orb-halo-aura,
+  .ring-primary,
+  .ring-secondary,
+  .orb-scan-arc,
+  .bipasha-panel-container,
+  .typing-dots span,
+  .progress-scan-glint {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .bipasha-orb-wrapper {
+    transform: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   13. RESPONSIVE DESIGN (MOBILE & TABLET)
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .bipasha-agent-root {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  .bipasha-orb-button {
+    width: 64px;
+    height: 64px;
+  }
+
+  .bipasha-orb-tooltip {
+    display: none; /* Avoid overflowing mobile edges */
+  }
+
+  .bipasha-panel-container {
+    width: calc(100vw - 32px);
+    right: 0;
+    bottom: 78px;
+    height: 540px;
+    max-height: calc(100vh - 100px);
+  }
+
+  .actions-subgrid {
+    grid-template-columns: 1fr;
+  }
+
+  .loading-controls-row {
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .safety-guarantee-note {
+    width: 100%;
+    justify-content: center;
+    order: -1;
+  }
+}

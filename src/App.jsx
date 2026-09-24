@@ -1,19 +1,33 @@
 import { useEffect, useState } from 'react'
 import {
-  Activity, ArrowUpRight, Bell, Bot, BrainCircuit, CalendarDays, ChevronRight,
-  CircleHelp, FlaskConical, LayoutDashboard, Menu, Package, Search, Settings2,
+  Activity, ArrowUpRight, Atom, Bell, Bot, BrainCircuit, CalendarDays, ChevronRight,
+  CircleHelp, FlaskConical, LayoutDashboard, Menu, Package, Pill, Search, Settings2,
   ShieldCheck, Sparkles, Target, X,
 } from 'lucide-react'
 import MoleculeScene from './components/MoleculeScene'
 import { getHealth } from './services/api'
+import BipashaAgent from './components/bipasha/BipashaAgent'
+import { BipashaProvider } from './components/bipasha/BipashaContext'
+import './components/bipasha/bipasha.css'
+
+import MoleculeLabView from './components/views/MoleculeLabView'
+import DrugAnalysisView from './components/views/DrugAnalysisView'
+import TargetAnalysisView from './components/views/TargetAnalysisView'
+import ExpiryMonitorView from './components/views/ExpiryMonitorView'
+import ResearchHubView from './components/views/ResearchHubView'
 
 const navItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'dti', label: 'DTI Lab', icon: FlaskConical, tag: 'Research' },
+  { id: 'molecules', label: 'Molecule Lab', icon: Atom, tag: '3D' },
+  { id: 'drugs', label: 'Drug Analysis', icon: Pill },
+  { id: 'targets', label: 'Target Analysis', icon: Target },
   { id: 'medicines', label: 'Medicine cabinet', icon: Package },
+  { id: 'expiry', label: 'Expiry monitor', icon: Bell, tag: 'Alerts' },
   { id: 'schedule', label: 'Schedule', icon: CalendarDays },
   { id: 'assistant', label: 'AI assistant', icon: Bot },
   { id: 'analytics', label: 'Analytics', icon: Activity },
+  { id: 'research', label: 'Research Hub', icon: BrainCircuit, tag: 'Docs' },
 ]
 
 const medicineRows = [
@@ -44,46 +58,58 @@ function App() {
   const page = navItems.find((item) => item.id === activePage) ?? navItems[0]
 
   return (
-    <div className="app-shell">
-      <aside className={`sidebar ${mobileNavOpen ? 'is-open' : ''}`}>
-        <div className="brand-lockup">
-          <div className="brand-mark"><span /><span /><span /></div>
-          <div><strong>AEGIS</strong><small>MOLECULAR LAB</small></div>
-          <button className="icon-button mobile-close" onClick={() => setMobileNavOpen(false)} aria-label="Close navigation"><X size={18} /></button>
-        </div>
-        <div className="workspace-switcher"><div className="workspace-dot" /><div><small>WORKSPACE</small><strong>Research / default</strong></div><ChevronRight size={15} /></div>
-        <nav className="primary-nav" aria-label="Primary navigation">
-          <p className="nav-label">Workspace</p>
-          {navItems.map(({ id, label, icon: Icon, tag }) => (
-            <button className={`nav-item ${activePage === id ? 'active' : ''}`} key={id} onClick={() => navigate(id)}>
-              <Icon size={17} strokeWidth={1.8} /><span>{label}</span>{tag && <em>{tag}</em>}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-foot">
-          <div className="system-status"><span className={`status-dot ${apiStatus}`} /><div><small>SYSTEM STATUS</small><strong>{apiStatus === 'connected' ? 'API connected' : apiStatus === 'offline' ? 'API offline' : 'Connecting to API'}</strong></div></div>
-          <button className="nav-item"><Settings2 size={17} /><span>Settings</span></button>
-          <button className="nav-item"><CircleHelp size={17} /><span>Documentation</span></button>
-          <div className="profile-chip"><div className="avatar">SR</div><div><strong>Student Researcher</strong><small>Local workspace</small></div><ChevronRight size={15} /></div>
-        </div>
-      </aside>
-      {mobileNavOpen && <button className="sidebar-scrim" onClick={() => setMobileNavOpen(false)} aria-label="Close navigation overlay" />}
+    <BipashaProvider activePage={activePage} navigate={navigate} setNotice={setNotice}>
+      <div className="app-shell">
+        <aside className={`sidebar ${mobileNavOpen ? 'is-open' : ''}`}>
+          <div className="brand-lockup">
+            <div className="brand-mark"><span /><span /><span /></div>
+            <div><strong>AEGIS</strong><small>MOLECULAR LAB</small></div>
+            <button className="icon-button mobile-close" onClick={() => setMobileNavOpen(false)} aria-label="Close navigation"><X size={18} /></button>
+          </div>
+          <div className="workspace-switcher"><div className="workspace-dot" /><div><small>WORKSPACE</small><strong>Research / default</strong></div><ChevronRight size={15} /></div>
+          <nav className="primary-nav" aria-label="Primary navigation">
+            <p className="nav-label">Workspace</p>
+            {navItems.map(({ id, label, icon: Icon, tag }) => (
+              <button className={`nav-item ${activePage === id ? 'active' : ''}`} key={id} onClick={() => navigate(id)}>
+                <Icon size={17} strokeWidth={1.8} /><span>{label}</span>{tag && <em>{tag}</em>}
+              </button>
+            ))}
+          </nav>
+          <div className="sidebar-foot">
+            <div className="system-status"><span className={`status-dot ${apiStatus}`} /><div><small>SYSTEM STATUS</small><strong>{apiStatus === 'connected' ? 'API connected' : apiStatus === 'offline' ? 'API offline' : 'Connecting to API'}</strong></div></div>
+            <button className="nav-item" onClick={() => navigate('research')}><Settings2 size={17} /><span>Settings</span></button>
+            <button className="nav-item" onClick={() => navigate('research')}><CircleHelp size={17} /><span>Documentation</span></button>
+            <div className="profile-chip"><div className="avatar">SR</div><div><strong>Student Researcher</strong><small>Local workspace</small></div><ChevronRight size={15} /></div>
+          </div>
+        </aside>
+        {mobileNavOpen && <button className="sidebar-scrim" onClick={() => setMobileNavOpen(false)} aria-label="Close navigation overlay" />}
 
-      <main className="main-content">
-        <header className="topbar">
-          <button className="icon-button mobile-menu" onClick={() => setMobileNavOpen(true)} aria-label="Open navigation"><Menu size={20} /></button>
-          <div className="breadcrumb"><span>AEGIS LAB</span><ChevronRight size={14} /><strong>{page.label}</strong></div>
-          <div className="topbar-actions"><div className="search-box"><Search size={16} /><input aria-label="Search workspace" placeholder="Search workspace" /></div><button className="icon-button notification-button" onClick={() => setNotice('You are all caught up')} aria-label="View notifications"><Bell size={18} /><span /></button><div className="top-avatar">SR</div></div>
-        </header>
-        {notice && <div className="toast" role="status"><ShieldCheck size={17} /><span>{notice}</span><button onClick={() => setNotice(null)} aria-label="Dismiss notification"><X size={14} /></button></div>}
-        {activePage === 'overview' && <Dashboard navigate={navigate} setNotice={setNotice} />}
-        {activePage === 'dti' && <DtiLab setNotice={setNotice} />}
-        {activePage === 'medicines' && <Medicines setNotice={setNotice} />}
-        {activePage === 'schedule' && <Schedule setNotice={setNotice} />}
-        {activePage === 'assistant' && <Assistant />}
-        {activePage === 'analytics' && <Analytics />}
-      </main>
-    </div>
+        <main className="main-content">
+          <header className="topbar">
+            <button className="icon-button mobile-menu" onClick={() => setMobileNavOpen(true)} aria-label="Open navigation"><Menu size={20} /></button>
+            <div className="breadcrumb"><span>AEGIS LAB</span><ChevronRight size={14} /><strong>{page.label}</strong></div>
+            <div className="topbar-actions"><div className="search-box"><Search size={16} /><input aria-label="Search workspace" placeholder="Search workspace" /></div><button className="icon-button notification-button" onClick={() => setNotice('You are all caught up')} aria-label="View notifications"><Bell size={18} /><span /></button><div className="top-avatar">SR</div></div>
+          </header>
+          {notice && <div className="toast" role="status"><ShieldCheck size={17} /><span>{notice}</span><button onClick={() => setNotice(null)} aria-label="Dismiss notification"><X size={14} /></button></div>}
+
+          {/* Page Routing */}
+          {activePage === 'overview' && <Dashboard navigate={navigate} setNotice={setNotice} />}
+          {activePage === 'dti' && <DtiLab setNotice={setNotice} />}
+          {activePage === 'molecules' && <MoleculeLabView setNotice={setNotice} />}
+          {activePage === 'drugs' && <DrugAnalysisView setNotice={setNotice} />}
+          {activePage === 'targets' && <TargetAnalysisView setNotice={setNotice} />}
+          {activePage === 'medicines' && <Medicines setNotice={setNotice} />}
+          {activePage === 'expiry' && <ExpiryMonitorView setNotice={setNotice} />}
+          {activePage === 'schedule' && <Schedule setNotice={setNotice} />}
+          {activePage === 'assistant' && <Assistant />}
+          {activePage === 'analytics' && <Analytics />}
+          {activePage === 'research' && <ResearchHubView setNotice={setNotice} />}
+        </main>
+
+        {/* Persistent 3D AI Agent "Bipasha Mam" */}
+        <BipashaAgent />
+      </div>
+    </BipashaProvider>
   )
 }
 
