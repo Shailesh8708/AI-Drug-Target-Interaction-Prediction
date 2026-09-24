@@ -20,3 +20,11 @@ export function getHealth() {
 export function getModels() {
   return request('/api/models')
 }
+
+export function resolveCompoundQuery(query) {
+  return request(`/api/compounds/resolve?q=${encodeURIComponent(query)}`)
+}
+
+export function autocompleteCompoundQuery(term) {
+  return request(`/api/compounds/autocomplete?term=${encodeURIComponent(term)}`)
+}

@@ -11,6 +11,7 @@ import { BipashaProvider } from './components/bipasha/BipashaContext'
 import './components/bipasha/bipasha.css'
 
 import MoleculeLabView from './components/views/MoleculeLabView'
+import VisualizeCompoundView from './components/views/VisualizeCompoundView'
 import DrugAnalysisView from './components/views/DrugAnalysisView'
 import TargetAnalysisView from './components/views/TargetAnalysisView'
 import ExpiryMonitorView from './components/views/ExpiryMonitorView'
@@ -20,6 +21,7 @@ const navItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'dti', label: 'DTI Lab', icon: FlaskConical, tag: 'Research' },
   { id: 'molecules', label: 'Molecule Lab', icon: Atom, tag: '3D' },
+  { id: 'visualize', label: 'Visualize Compound', icon: Atom, tag: 'New' },
   { id: 'drugs', label: 'Drug Analysis', icon: Pill },
   { id: 'targets', label: 'Target Analysis', icon: Target },
   { id: 'medicines', label: 'Medicine cabinet', icon: Package },
@@ -96,6 +98,7 @@ function App() {
           {activePage === 'overview' && <Dashboard navigate={navigate} setNotice={setNotice} />}
           {activePage === 'dti' && <DtiLab setNotice={setNotice} />}
           {activePage === 'molecules' && <MoleculeLabView setNotice={setNotice} />}
+          {activePage === 'visualize' && <VisualizeCompoundView setNotice={setNotice} />}
           {activePage === 'drugs' && <DrugAnalysisView setNotice={setNotice} />}
           {activePage === 'targets' && <TargetAnalysisView setNotice={setNotice} />}
           {activePage === 'medicines' && <Medicines setNotice={setNotice} />}

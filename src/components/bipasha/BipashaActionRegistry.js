@@ -44,6 +44,24 @@ export const BIPASHA_ACTIONS = [
     ],
   },
   {
+    id: 'visualize',
+    label: 'Visualize Compound',
+    category: 'Discovery',
+    iconName: 'Atom',
+    description: 'Resolve chemical identities, map structure, and explore molecules in 2D and 3D.',
+    route: 'visualize',
+    animationType: 'visualize',
+    color: '#34d399',
+    badge: 'Chemistry',
+    stages: [
+      { min: 0, max: 20, text: 'Resolving compound identity...', subtext: 'Checking the chemical name, formula, and identifiers' },
+      { min: 21, max: 45, text: 'Preparing molecular structure...', subtext: 'Retrieving atom and bond topology from the database' },
+      { min: 46, max: 70, text: 'Generating molecular representation...', subtext: 'Building 2D and 3D structural views' },
+      { min: 71, max: 88, text: 'Preparing 3D visualization...', subtext: 'Rotating the molecular scene and calculating labels' },
+      { min: 89, max: 100, text: 'Compound workspace ready', subtext: 'Opening the interactive molecular visualization studio' },
+    ],
+  },
+  {
     id: 'drugs',
     label: 'Drug Analysis',
     category: 'Discovery',
@@ -226,6 +244,16 @@ export function getContextualGreeting(pageId) {
           { label: 'Research Papers', actionId: 'research' },
         ],
       }
+    case 'visualize':
+      return {
+        greeting: "Hello! I'm Bipasha Mam. Your molecular visualization workspace is ready.",
+        subtext: "Explore the structure, bonds, rings, functional groups, and 3D geometry of the current compound.",
+        quickActions: [
+          { label: 'Visualize Benzene', query: 'Visualize benzene' },
+          { label: 'Show Properties', query: 'Show molecular properties' },
+          { label: 'Show 3D Structure', query: 'Show the 3D structure' },
+        ],
+      }
     case 'drugs':
       return {
         greeting: "Welcome to Drug Analysis! Let's evaluate chemotypes and ADMET bounds.",
@@ -360,6 +388,15 @@ export function parseAgentIntent(rawQuery) {
       targetAction: 'molecules',
       text: "Opening Molecule Lab for 3D stereochemical inspection and physicochemical profiling.",
       actionLabel: 'Open Molecule Lab',
+    }
+  }
+
+  if (query.includes('visualize') || query.includes('compound visualization') || query.includes('show the structure of') || query.includes('show me the 3d structure') || query.includes('open compound visualization') || query.includes('analyze caffeine') || query.includes('visualize benzene') || query.includes('visualize methanol') || query.includes('show the ring structure') || query.includes('molecular properties')) {
+    return {
+      type: 'navigate',
+      targetAction: 'visualize',
+      text: "Opening the compound visualization workspace to inspect structure, properties, and 3D geometry.",
+      actionLabel: 'Visualize Compound',
     }
   }
 
