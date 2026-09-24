@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   Activity, ArrowUpRight, Atom, Bell, Bot, BrainCircuit, CalendarDays, ChevronRight,
   CircleHelp, FlaskConical, LayoutDashboard, Menu, Package, Pill, Search, Settings2,
-  ShieldCheck, Sparkles, Target, X,
+  ShieldCheck, Sparkles, Target, Wand2, X,
 } from 'lucide-react'
 import MoleculeScene from './components/MoleculeScene'
 import { getHealth } from './services/api'
@@ -12,6 +12,7 @@ import './components/bipasha/bipasha.css'
 
 import MoleculeLabView from './components/views/MoleculeLabView'
 import VisualizeCompoundView from './components/views/VisualizeCompoundView'
+import MolecularProteinStudioView from './components/views/MolecularProteinStudioView'
 import DrugAnalysisView from './components/views/DrugAnalysisView'
 import TargetAnalysisView from './components/views/TargetAnalysisView'
 import ExpiryMonitorView from './components/views/ExpiryMonitorView'
@@ -22,6 +23,7 @@ const navItems = [
   { id: 'dti', label: 'DTI Lab', icon: FlaskConical, tag: 'Research' },
   { id: 'molecules', label: 'Molecule Lab', icon: Atom, tag: '3D' },
   { id: 'visualize', label: 'Visualize Compound', icon: Atom, tag: 'New' },
+  { id: 'studio', label: 'Molecular Studio', icon: Wand2, tag: 'Build' },
   { id: 'drugs', label: 'Drug Analysis', icon: Pill },
   { id: 'targets', label: 'Target Analysis', icon: Target },
   { id: 'medicines', label: 'Medicine cabinet', icon: Package },
@@ -99,6 +101,7 @@ function App() {
           {activePage === 'dti' && <DtiLab setNotice={setNotice} />}
           {activePage === 'molecules' && <MoleculeLabView setNotice={setNotice} />}
           {activePage === 'visualize' && <VisualizeCompoundView setNotice={setNotice} />}
+          {activePage === 'studio' && <MolecularProteinStudioView setNotice={setNotice} navigate={navigate} />}
           {activePage === 'drugs' && <DrugAnalysisView setNotice={setNotice} />}
           {activePage === 'targets' && <TargetAnalysisView setNotice={setNotice} />}
           {activePage === 'medicines' && <Medicines setNotice={setNotice} />}

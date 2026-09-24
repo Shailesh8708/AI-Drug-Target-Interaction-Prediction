@@ -15,6 +15,7 @@ The initial implementation is a responsive React/Vite workspace with an Express 
 - General-information AI assistant shell with visible guardrails.
 - Analytics shell that does not invent model metrics or prediction results.
 - Lightweight animated molecular network visual, responsive layout, and reduced-motion support.
+- Aegis Molecular Studio with a structured atom/bond editor, chemistry templates, deterministic graph descriptors, inspector panels, local saves, and MOL/JSON export.
 - API health and empty model-registry endpoints.
 - Focused expiry-domain test and documentation for the future research pipeline.
 
@@ -79,4 +80,4 @@ docs/                Architecture, methodology, API, UI, and scope notes
 
 Phase 1 does not include RDKit processing, a dataset, trained models, real prediction probabilities, authentication, persistence, notification jobs, or a medical AI service. The UI labels these surfaces as drafts, unavailable, or placeholders so demo data cannot be confused with scientific results.
 
-The recommended next step is the independently testable molecular-processing layer: SMILES validation, RDKit parsing, deterministic descriptors, and a versioned feature contract.
+Molecular Studio currently keeps its editing model independent from the processing engine. The local graph can calculate counts, formula, mass, components, cycle estimates, and basic topology without claiming valence, stereochemistry, TPSA, LogP, or 3D coordinates. The recommended next step is the independently testable RDKit processing layer: SMILES validation, parsing, descriptors, fingerprints, and a versioned feature contract.

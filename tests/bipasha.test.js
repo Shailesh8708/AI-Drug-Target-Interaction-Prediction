@@ -13,6 +13,7 @@ test('Action Registry contains all 10 required project modules', () => {
     'dti',
     'molecules',
     'visualize',
+    'studio',
     'drugs',
     'targets',
     'medicines',
@@ -23,7 +24,7 @@ test('Action Registry contains all 10 required project modules', () => {
     'research',
   ]
 
-  assert.equal(BIPASHA_ACTIONS.length, 11)
+  assert.equal(BIPASHA_ACTIONS.length, 12)
 
   expectedModules.forEach((modId) => {
     const action = getActionById(modId)
@@ -77,6 +78,10 @@ test('Intent parser accurately maps natural language requests to actions', () =>
   const visualizeIntent = parseAgentIntent('Visualize benzene')
   assert.equal(visualizeIntent.type, 'navigate')
   assert.equal(visualizeIntent.targetAction, 'visualize')
+
+  const studioIntent = parseAgentIntent('Open Molecular Studio')
+  assert.equal(studioIntent.type, 'navigate')
+  assert.equal(studioIntent.targetAction, 'studio')
 
   const anaIntent = parseAgentIntent('Take me to analytics')
   assert.equal(anaIntent.type, 'navigate')

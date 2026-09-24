@@ -62,6 +62,24 @@ export const BIPASHA_ACTIONS = [
     ],
   },
   {
+    id: 'studio',
+    label: 'Molecular Studio',
+    category: 'Discovery',
+    iconName: 'Atom',
+    description: 'Create, validate, inspect, and export structured molecular graphs.',
+    route: 'studio',
+    animationType: 'visualize',
+    color: '#397654',
+    badge: 'Build',
+    stages: [
+      { min: 0, max: 20, text: 'Opening molecular graph editor...', subtext: 'Preparing a structured, editable molecule' },
+      { min: 21, max: 45, text: 'Loading chemistry toolbox...', subtext: 'Preparing atoms, bonds, and reusable templates' },
+      { min: 46, max: 70, text: 'Preparing molecular inspector...', subtext: 'Calculating deterministic graph descriptors' },
+      { min: 71, max: 88, text: 'Preparing export workflow...', subtext: 'Keeping JSON and MOL data tied to the graph' },
+      { min: 89, max: 100, text: 'Molecular Studio ready', subtext: 'Build and inspect a research structure' },
+    ],
+  },
+  {
     id: 'drugs',
     label: 'Drug Analysis',
     category: 'Discovery',
@@ -254,6 +272,16 @@ export function getContextualGreeting(pageId) {
           { label: 'Show 3D Structure', query: 'Show the 3D structure' },
         ],
       }
+    case 'studio':
+      return {
+        greeting: "Welcome to Molecular Studio. Build a structured molecule and inspect what the current graph can prove.",
+        subtext: "Templates, atom and bond editing, deterministic graph descriptors, and explicit chemistry-engine boundaries are ready.",
+        quickActions: [
+          { label: 'Open DTI Lab', actionId: 'dti' },
+          { label: 'Visualize a compound', actionId: 'visualize' },
+          { label: 'Research methodology', actionId: 'research' },
+        ],
+      }
     case 'drugs':
       return {
         greeting: "Welcome to Drug Analysis! Let's evaluate chemotypes and ADMET bounds.",
@@ -379,6 +407,15 @@ export function parseAgentIntent(rawQuery) {
       targetAction: 'dti',
       text: "Understood. Initializing the Drug–Target Interaction Laboratory.",
       actionLabel: 'Launch DTI Lab',
+    }
+  }
+
+  if (query.includes('molecular studio') || query.includes('draw molecule') || query.includes('create molecule') || query.includes('chemical editor')) {
+    return {
+      type: 'navigate',
+      targetAction: 'studio',
+      text: "Opening Molecular Studio for structured chemical editing and inspection.",
+      actionLabel: 'Open Molecular Studio',
     }
   }
 
