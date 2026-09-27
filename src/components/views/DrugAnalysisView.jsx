@@ -1,151 +1,251 @@
-import { useState } from 'react'
-import { Pill, ShieldCheck, Activity, AlertTriangle, CheckCircle2, ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import {
+  Pill,
+  ShieldCheck,
+  Activity,
+  Layers,
+  Target,
+  Network,
+  AlertTriangle,
+  Stethoscope,
+  BookOpen,
+  Bot,
+  GitCompare,
+  Sparkles,
+} from 'lucide-react'
 
-const DRUG_RECORDS = [
-  {
-    id: 'd1',
-    name: 'Cetirizine',
-    class: 'Second-generation Antihistamine',
-    smiles: 'ClC1=CC=C(C(C2=CC=CC=C2)N3CCN(CCOCC(=O)O)CC3)C=C1',
-    absorption: 'High (HIA 94%)',
-    bbb: 'Low (P-gp substrate, non-sedating)',
-    solubility: '-3.12 LogS (Soluble)',
-    cyp3a4: 'Non-inhibitor',
-    hergRisk: 'Low Risk',
-  },
-  {
-    id: 'd2',
-    name: 'Paracetamol (Acetaminophen)',
-    class: 'Analgesic / Antipyretic',
-    smiles: 'CC(=O)NC1=CC=C(O)C=C1',
-    absorption: 'High (HIA 98%)',
-    bbb: 'Moderate (Crosses BBB)',
-    solubility: '-1.45 LogS (High)',
-    cyp3a4: 'Non-inhibitor (CYP2E1 pathway)',
-    hergRisk: 'Low Risk',
-  },
-  {
-    id: 'd3',
-    name: 'Imatinib Mesylate',
-    class: 'Tyrosine Kinase Inhibitor',
-    smiles: 'Cc1ccc(NC(=O)c2ccc(CN3CCN(C)CC3)cc2)cc1Nc4nccc(n4)c5cccnc5',
-    absorption: 'Moderate (HIA 78%)',
-    bbb: 'Poor (Effluxed by ABCB1)',
-    solubility: '-4.65 LogS (Moderate)',
-    cyp3a4: 'Strong Inhibitor',
-    hergRisk: 'Moderate Risk',
-  },
-]
+// Import Drug Intelligence Subcomponents
+import DrugSearchHeader from '../drugintelligence/DrugSearchHeader.jsx'
+import DrugProfileHeader from '../drugintelligence/DrugProfileHeader.jsx'
+import DrugStructureViewer from '../drugintelligence/DrugStructureViewer.jsx'
+import ChemicalPropertiesPanel from '../drugintelligence/ChemicalPropertiesPanel.jsx'
+import PhysicochemicalRadar from '../drugintelligence/PhysicochemicalRadar.jsx'
+import FunctionalGroupScaffoldPanel from '../drugintelligence/FunctionalGroupScaffoldPanel.jsx'
+import BioactivityIntelligencePanel from '../drugintelligence/BioactivityIntelligencePanel.jsx'
+import TargetIntelligencePanel from '../drugintelligence/TargetIntelligencePanel.jsx'
+import DrugTargetNetworkGraph from '../drugintelligence/DrugTargetNetworkGraph.jsx'
+import DrugInteractionsPanel from '../drugintelligence/DrugInteractionsPanel.jsx'
+import ADMEPharmacologyPanel from '../drugintelligence/ADMEPharmacologyPanel.jsx'
+import DiseasePharmacogenomicsPanel from '../drugintelligence/DiseasePharmacogenomicsPanel.jsx'
+import LiteratureEvidenceMatrix from '../drugintelligence/LiteratureEvidenceMatrix.jsx'
+import AIDrugAnalystPanel from '../drugintelligence/AIDrugAnalystPanel.jsx'
+import ExplainableDTIComparison from '../drugintelligence/ExplainableDTIComparison.jsx'
+import SimilarDrugsSARPanel from '../drugintelligence/SimilarDrugsSARPanel.jsx'
+import DrugJourneyStoryMode from '../drugintelligence/DrugJourneyStoryMode.jsx'
+import ResearchWorkspaceModal from '../drugintelligence/ResearchWorkspaceModal.jsx'
+import DrugReportModal from '../drugintelligence/DrugReportModal.jsx'
 
-export default function DrugAnalysisView({ setNotice }) {
-  const [selectedDrug, setSelectedDrug] = useState(DRUG_RECORDS[0])
+// Import Service and CSS
+import { getDrugProfile } from '../../services/drugIntelligenceService.js'
+import '../drugintelligence/drugintelligence.css'
+
+export default function DrugAnalysisView({ setNotice = () => {}, navigate }) {
+  const [activeDrugId, setActiveDrugId] = useState('ciprofloxacin')
+  const [drug, setDrug] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('overview')
+
+  // Modals & Mode toggles
+  const [showWorkspace, setShowWorkspace] = useState(false)
+  const [showReport, setShowReport] = useState(false)
+  const [showJourney, setShowJourney] = useState(false)
+
+  // Fetch full drug profile
+  useEffect(() => {
+    let isMounted = true
+    const loadDrug = async () => {
+      setLoading(true)
+      const data = await getDrugProfile(activeDrugId)
+      if (isMounted) {
+        if (data) {
+          setDrug(data)
+        }
+        setLoading(false)
+      }
+    }
+    loadDrug()
+    return () => {
+      isMounted = false
+    }
+  }, [activeDrugId])
+
+  const handleSelectDrug = (idOrName) => {
+    setActiveDrugId(idOrName)
+    setNotice && setNotice(`Loaded comprehensive pharmacological profile for ${idOrName}`)
+  }
 
   return (
-    <div className="page-wrap">
-      <div className="page-intro">
-        <div>
-          <p className="eyebrow">Pharmacological Profiling</p>
-          <h1>Drug Analysis</h1>
-          <p className="intro-copy">
-            Evaluate bioactivity profiles, simulated ADMET characteristics, and computational safety thresholds.
-          </p>
-        </div>
+    <div className="drug-intel-workstation">
+      {/* 1. Header & Search Bar */}
+      <DrugSearchHeader
+        activeDrugId={activeDrugId}
+        onSelectDrug={handleSelectDrug}
+        onOpenWorkspace={() => setShowWorkspace(true)}
+        onOpenReport={() => setShowReport(true)}
+        onOpenJourney={() => setShowJourney(true)}
+        loading={loading}
+      />
+
+      {/* 2. Drug Identity Banner */}
+      {drug && (
+        <DrugProfileHeader
+          drug={drug}
+          navigate={navigate}
+          onFavoriteChange={() => setNotice('Updated drug favorites in local research workspace')}
+        />
+      )}
+
+      {/* 3. Drug Journey Mode (Storytelling) */}
+      {showJourney && (
+        <DrugJourneyStoryMode
+          drug={drug}
+          onClose={() => setShowJourney(false)}
+        />
+      )}
+
+      {/* 4. Workspace Navigation Tabs */}
+      <div className="intel-tabs-bar">
         <button
-          className="primary-button small"
-          onClick={() => setNotice('ADMET simulation calibrated against SwissADME & ChEMBL models')}
+          className={`intel-tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+          onClick={() => setActiveTab('overview')}
         >
-          <Activity size={15} /> Run ADMET Scan
+          <Layers size={15} /> 3D Structure & Properties
+        </button>
+        <button
+          className={`intel-tab-btn ${activeTab === 'targets' ? 'active' : ''}`}
+          onClick={() => setActiveTab('targets')}
+        >
+          <Target size={15} /> Targets & Bioactivity
+        </button>
+        <button
+          className={`intel-tab-btn ${activeTab === 'network' ? 'active' : ''}`}
+          onClick={() => setActiveTab('network')}
+        >
+          <Network size={15} /> AI Intelligence Graph
+        </button>
+        <button
+          className={`intel-tab-btn ${activeTab === 'pharmacology' ? 'active' : ''}`}
+          onClick={() => setActiveTab('pharmacology')}
+        >
+          <Activity size={15} /> ADMET & MoA
+        </button>
+        <button
+          className={`intel-tab-btn ${activeTab === 'interactions' ? 'active' : ''}`}
+          onClick={() => setActiveTab('interactions')}
+        >
+          <AlertTriangle size={15} /> DDI & Safety
+        </button>
+        <button
+          className={`intel-tab-btn ${activeTab === 'clinical' ? 'active' : ''}`}
+          onClick={() => setActiveTab('clinical')}
+        >
+          <Stethoscope size={15} /> Indications & PGx
+        </button>
+        <button
+          className={`intel-tab-btn ${activeTab === 'evidence' ? 'active' : ''}`}
+          onClick={() => setActiveTab('evidence')}
+        >
+          <BookOpen size={15} /> Evidence Matrix
+        </button>
+        <button
+          className={`intel-tab-btn ${activeTab === 'ai_analyst' ? 'active' : ''}`}
+          onClick={() => setActiveTab('ai_analyst')}
+        >
+          <Bot size={15} /> AI Analyst & Explainable DTI
+        </button>
+        <button
+          className={`intel-tab-btn ${activeTab === 'similar' ? 'active' : ''}`}
+          onClick={() => setActiveTab('similar')}
+        >
+          <GitCompare size={15} /> SAR & Congeners
         </button>
       </div>
 
-      <div className="lab-grid">
-        {/* Left: Drug Chemotype & ADMET Card */}
-        <div className="content-panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Selected Compound</p>
-              <h3>{selectedDrug.name}</h3>
-            </div>
-            <span className="draft-badge">{selectedDrug.class}</span>
-          </div>
-
-          <p style={{ fontSize: '11px', color: '#66746b', fontFamily: 'monospace', wordBreak: 'break-all', background: '#f5f7f3', padding: '10px', borderRadius: '4px' }}>
-            {selectedDrug.smiles}
-          </p>
-
-          <h4 style={{ fontSize: '12px', margin: '16px 0 8px', color: '#55635a' }}>Simulated ADMET Parameters</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #edf0ec', fontSize: '11px' }}>
-              <span style={{ color: '#748078' }}>Intestinal Absorption (HIA)</span>
-              <strong>{selectedDrug.absorption}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #edf0ec', fontSize: '11px' }}>
-              <span style={{ color: '#748078' }}>Blood-Brain Barrier (BBB)</span>
-              <strong>{selectedDrug.bbb}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #edf0ec', fontSize: '11px' }}>
-              <span style={{ color: '#748078' }}>Aqueous Solubility (LogS)</span>
-              <strong>{selectedDrug.solubility}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #edf0ec', fontSize: '11px' }}>
-              <span style={{ color: '#748078' }}>CYP3A4 Inhibition</span>
-              <strong>{selectedDrug.cyp3a4}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #edf0ec', fontSize: '11px' }}>
-              <span style={{ color: '#748078' }}>hERG Cardiotoxicity Risk</span>
-              <span className={`status-pill ${selectedDrug.hergRisk.includes('Low') ? 'active' : 'warning'}`}>
-                {selectedDrug.hergRisk}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Compound Registry */}
-        <div className="content-panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Registry</p>
-              <h3>Screened Compounds</h3>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {DRUG_RECORDS.map((drug) => (
-              <div
-                key={drug.id}
-                onClick={() => setSelectedDrug(drug)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px',
-                  background: selectedDrug.id === drug.id ? '#eef5ee' : '#fcfdfb',
-                  border: `1px solid ${selectedDrug.id === drug.id ? '#cdded0' : '#edf0ec'}`,
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <div style={{ width: '32px', height: '32px', borderRadius: '4px', background: '#e2f0e4', display: 'grid', placeItems: 'center', color: '#397654' }}>
-                  <Pill size={16} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <strong style={{ display: 'block', fontSize: '12px' }}>{drug.name}</strong>
-                  <small style={{ color: '#89958d', fontSize: '10px' }}>{drug.class}</small>
-                </div>
-                <ChevronRight size={16} color="#a0aba4" />
+      {/* 5. Tab Content Views */}
+      {drug && (
+        <>
+          {activeTab === 'overview' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div className="structure-overview-grid">
+                <DrugStructureViewer drug={drug} />
+                <ChemicalPropertiesPanel drug={drug} />
               </div>
-            ))}
-          </div>
+              <div className="structure-overview-grid">
+                <PhysicochemicalRadar drug={drug} />
+                <FunctionalGroupScaffoldPanel drug={drug} />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'targets' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <TargetIntelligencePanel drug={drug} navigate={navigate} />
+              <BioactivityIntelligencePanel drug={drug} />
+            </div>
+          )}
+
+          {activeTab === 'network' && (
+            <DrugTargetNetworkGraph drug={drug} />
+          )}
+
+          {activeTab === 'pharmacology' && (
+            <ADMEPharmacologyPanel drug={drug} />
+          )}
+
+          {activeTab === 'interactions' && (
+            <DrugInteractionsPanel drug={drug} />
+          )}
+
+          {activeTab === 'clinical' && (
+            <DiseasePharmacogenomicsPanel drug={drug} />
+          )}
+
+          {activeTab === 'evidence' && (
+            <LiteratureEvidenceMatrix drug={drug} />
+          )}
+
+          {activeTab === 'ai_analyst' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <AIDrugAnalystPanel drug={drug} />
+              <ExplainableDTIComparison drug={drug} navigate={navigate} />
+            </div>
+          )}
+
+          {activeTab === 'similar' && (
+            <SimilarDrugsSARPanel
+              drug={drug}
+              onSelectDrug={handleSelectDrug}
+              navigate={navigate}
+            />
+          )}
+        </>
+      )}
+
+      {/* 6. Scientific & Non-Clinical Disclaimer */}
+      <div className="intel-disclaimer">
+        <ShieldCheck size={20} color="#10b981" style={{ flexShrink: 0, marginTop: '2px' }} />
+        <div>
+          <strong style={{ color: '#f1f5f9' }}>Scientific Research & Computational Simulation Notice:</strong>
+          {' '}Bioactivity indices, ADMET properties, and interaction likelihoods are derived from curated open databases (PubChem, ChEMBL, PDB) and in-silico machine learning models. This platform is strictly designed for computational chemistry education and pharmaceutical research; it does not provide clinical advice or patient-specific prescribing recommendations.
         </div>
       </div>
 
-      <div className="disclaimer">
-        <ShieldCheck size={18} />
-        <p>
-          <strong>Non-Clinical Simulation Notice</strong> ADMET screening values are generated by in-silico quantitative structure-activity relationship (QSAR) models and must never replace pharmacokinetic or toxicology testing in clinical laboratories.
-        </p>
-      </div>
+      {/* 7. Research Workspace Modal */}
+      {showWorkspace && (
+        <ResearchWorkspaceModal
+          drug={drug}
+          onSelectDrug={handleSelectDrug}
+          onClose={() => setShowWorkspace(false)}
+        />
+      )}
+
+      {/* 8. Export Dossier Modal */}
+      {showReport && (
+        <DrugReportModal
+          drug={drug}
+          onClose={() => setShowReport(false)}
+        />
+      )}
     </div>
   )
 }

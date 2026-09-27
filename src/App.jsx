@@ -108,7 +108,7 @@ function App() {
           {activePage === 'visualize' && <VisualizeCompoundView setNotice={setNotice} navigate={navigate} />}
           {activePage === 'compare' && <StructureComparisonView setNotice={setNotice} navigate={navigate} />}
           {activePage === 'studio' && <MolecularProteinStudioView setNotice={setNotice} navigate={navigate} />}
-          {activePage === 'drugs' && <DrugAnalysisView setNotice={setNotice} />}
+          {activePage === 'drugs' && <DrugAnalysisView setNotice={setNotice} navigate={navigate} />}
           {activePage === 'targets' && <TargetAnalysisView setNotice={setNotice} />}
           {activePage === 'medicines' && <Medicines setNotice={setNotice} />}
           {activePage === 'expiry' && <ExpiryMonitorView setNotice={setNotice} />}

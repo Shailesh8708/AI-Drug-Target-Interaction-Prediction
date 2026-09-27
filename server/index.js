@@ -14,6 +14,13 @@ import {
   generateStructureInterpretation,
   answerStructureQuestion,
 } from './services/bioStructureService.js'
+import {
+  searchDrugs,
+  getDrugProfile,
+  analyzeDrugDrugInteraction,
+  answerDrugQuestion,
+  predictDrugTargetInteraction,
+} from './services/drugIntelligenceService.js'
 
 const app = express()
 const port = process.env.PORT || 4000
@@ -238,6 +245,73 @@ app.post('/api/structure/ask', async (req, res) => {
     res.json(answer)
   } catch (err) {
     res.status(500).json({ error: 'AI interpretation failed', message: err.message })
+// ==========================================
+// DRUG INTELLIGENCE & ANALYSIS API ENDPOINTS
+// ==========================================
+
+// Search drug library and live repositories
+app.get('/api/drugs/search', async (req, res) => {
+  const q = req.query.q || ''
+  try {
+    const results = await searchDrugs(q)
+    res.json({ results })
+  } catch (err) {
+    res.status(500).json({ error: 'Drug search failed', message: err.message })
+  }
+})
+
+// Retrieve complete universal drug profile
+app.get('/api/drugs/:id', async (req, res) => {
+  const drugId = req.params.id
+  try {
+    const drug = await getDrugProfile(drugId)
+    res.json({ drug })
+  } catch (err) {
+    res.status(404).json({ error: 'Drug profile not found', message: err.message })
+  }
+})
+
+// Drug–Drug Interaction (DDI) analysis
+app.post('/api/drugs/ddi', async (req, res) => {
+  const { drugA, drugB } = req.body || {}
+  if (!drugA || !drugB) {
+    return res.status(400).json({ error: 'Both drugA and drugB identifiers are required' })
+  }
+  try {
+    const interaction = await analyzeDrugDrugInteraction(drugA, drugB)
+    res.json({ interaction })
+  } catch (err) {
+    res.status(500).json({ error: 'DDI analysis failed', message: err.message })
+  }
+})
+
+// Grounded AI Drug Analyst Q&A ("Ask the Drug")
+app.post('/api/drugs/ask', async (req, res) => {
+  const { drug, question } = req.body || {}
+  try {
+    let drugProfile = drug
+    if (typeof drug === 'string') {
+      drugProfile = await getDrugProfile(drug)
+    }
+    const answer = answerDrugQuestion(drugProfile, question)
+    res.json(answer)
+  } catch (err) {
+    res.status(500).json({ error: 'Drug AI interpretation failed', message: err.message })
+  }
+})
+
+// Explainable DTI prediction & feature attribution
+app.post('/api/drugs/predict-dti', async (req, res) => {
+  const { drug, target } = req.body || {}
+  try {
+    let drugProfile = drug
+    if (typeof drug === 'string') {
+      drugProfile = await getDrugProfile(drug)
+    }
+    const prediction = predictDrugTargetInteraction(drugProfile, target)
+    res.json({ prediction })
+  } catch (err) {
+    res.status(500).json({ error: 'DTI prediction failed', message: err.message })
   }
 })
 

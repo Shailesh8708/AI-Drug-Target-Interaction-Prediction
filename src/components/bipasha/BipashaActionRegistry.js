@@ -120,17 +120,17 @@ export const BIPASHA_ACTIONS = [
     label: 'Drug Analysis',
     category: 'Discovery',
     iconName: 'Pill',
-    description: 'Bioactivity screening, chemotype profiling, and ADMET estimations',
+    description: 'Drug intelligence, pharmacology, targets, bioactivity, ADME, and AI DTI analysis',
     route: 'drugs',
     animationType: 'drugs',
     color: '#059669',
-    badge: 'Screening',
+    badge: 'Intel',
     stages: [
-      { min: 0, max: 20, text: 'Auditing Chemotype Signatures...', subtext: 'Verifying canonical SMILES structure and stereocenters' },
-      { min: 21, max: 45, text: 'Screening ADMET Safety Thresholds...', subtext: 'Estimating blood-brain barrier permeability & absorption' },
-      { min: 46, max: 70, text: 'Cross-referencing Bioactivity Indices...', subtext: 'Correlating simulated IC50 / Ki baseline values' },
-      { min: 71, max: 88, text: 'Compiling Pharmacological Matrix...', subtext: 'Formatting computational safety documentation' },
-      { min: 89, max: 100, text: 'Drug Analysis Ready', subtext: 'Launching compound assessment dashboard' },
+      { min: 0, max: 20, text: 'Querying Drug Intelligence Knowledge Base...', subtext: 'Resolving identifiers across PubChem, ChEMBL, and PDB' },
+      { min: 21, max: 45, text: 'Calculating Physicochemical Descriptors...', subtext: 'Auditing Lipinski, Veber, Ghose rules and ADMET envelopes' },
+      { min: 46, max: 70, text: 'Synthesizing Biological Target Topology...', subtext: 'Mapping bioactivity assays, CYP pathways, and DDI risks' },
+      { min: 71, max: 88, text: 'Calibrating Explainable DTI Matrices...', subtext: 'Evaluating SHAP attributions and molecular similarity' },
+      { min: 89, max: 100, text: 'Drug Intelligence Workstation Online', subtext: 'Entering comprehensive pharmacological dossier' },
     ],
   },
   {
@@ -341,12 +341,12 @@ export function getContextualGreeting(pageId) {
       }
     case 'drugs':
       return {
-        greeting: "Welcome to Drug Analysis! Let's evaluate chemotypes and ADMET bounds.",
-        subtext: "Review simulated physicochemical properties and computational bioactivity indices.",
+        greeting: "Welcome to Drug Intelligence & Analysis! Ready to explore pharmacology and DTI networks?",
+        subtext: "Review 3D structures, bioactivity assays, targets, ADMET profiles, and AI-predicted interactions.",
         quickActions: [
-          { label: 'Inspect Conformation', actionId: 'molecules' },
-          { label: 'Predict Interactions', actionId: 'dti' },
-          { label: 'Model Metrics', actionId: 'analytics' },
+          { label: '3D BioStructure', actionId: 'biostructure' },
+          { label: 'Compare Structures', actionId: 'compare' },
+          { label: 'Predict DTI Affinity', actionId: 'dti' },
         ],
       }
     case 'targets':
@@ -534,11 +534,24 @@ export function parseAgentIntent(rawQuery) {
     }
   }
 
-  if (query.includes('drug analysis') || query.includes('admet') || query.includes('bioactivity') || query.includes('chemotype') || query.includes('compound analysis')) {
+  if (
+    query.includes('drug analysis') ||
+    query.includes('drug intelligence') ||
+    query.includes('admet') ||
+    query.includes('bioactivity') ||
+    query.includes('chemotype') ||
+    query.includes('compound analysis') ||
+    query.includes('pharmacology') ||
+    query.includes('drug interaction') ||
+    query.includes('ddi') ||
+    query.includes('pharmacogenomics') ||
+    query.includes('ciprofloxacin') ||
+    query.includes('ask the drug')
+  ) {
     return {
       type: 'navigate',
       targetAction: 'drugs',
-      text: "Navigating to Drug Analysis for compound screening and ADMET estimates.",
+      text: "Navigating to Drug Intelligence & Analysis for comprehensive pharmacological profiling, ADMET, and DTI intelligence.",
       actionLabel: 'Open Drug Analysis',
     }
   }
