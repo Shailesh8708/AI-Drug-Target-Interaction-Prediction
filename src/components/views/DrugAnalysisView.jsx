@@ -12,6 +12,7 @@ import {
   Bot,
   GitCompare,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react'
 
 // Import Drug Intelligence Subcomponents
@@ -162,6 +163,25 @@ export default function DrugAnalysisView({ setNotice = () => {}, navigate }) {
       </div>
 
       {/* 5. Tab Content Views */}
+      {loading && !drug && (
+        <div style={{ textAlign: 'center', padding: '5rem 2rem', color: '#94a3b8' }}>
+          <RefreshCw size={36} className="spin" color="#10b981" style={{ marginBottom: '1rem', display: 'inline-block' }} />
+          <h3 style={{ color: '#f1f5f9', margin: '0 0 0.5rem', fontSize: '1.25rem' }}>Loading Comprehensive Drug Intelligence...</h3>
+          <p style={{ fontSize: '0.85rem' }}>Synthesizing 3D conformations, bioactivity records, ADMET profiles, and target networks.</p>
+        </div>
+      )}
+
+      {!loading && !drug && (
+        <div style={{ textAlign: 'center', padding: '5rem 2rem', color: '#94a3b8' }}>
+          <AlertTriangle size={36} color="#f59e0b" style={{ marginBottom: '1rem', display: 'inline-block' }} />
+          <h3 style={{ color: '#f1f5f9', margin: '0 0 0.5rem', fontSize: '1.25rem' }}>Compound Profile Unavailable</h3>
+          <p style={{ fontSize: '0.85rem', marginBottom: '1.25rem' }}>Could not load the pharmacological dossier for "{activeDrugId}".</p>
+          <button className="action-btn-pill primary" onClick={() => handleSelectDrug('ciprofloxacin')}>
+            Reset to Ciprofloxacin Reference
+          </button>
+        </div>
+      )}
+
       {drug && (
         <>
           {activeTab === 'overview' && (

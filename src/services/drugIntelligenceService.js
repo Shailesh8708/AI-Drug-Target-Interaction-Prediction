@@ -4,6 +4,15 @@
  * for the Drug Intelligence & Analysis Platform.
  */
 
+import {
+  DRUG_INTELLIGENCE_LIBRARY,
+  getDrugProfile as getFallbackDrugProfile,
+  searchDrugs as searchFallbackDrugs,
+  analyzeDrugDrugInteraction,
+  answerDrugQuestion as localAnswerDrugQuestion,
+  predictDrugTargetInteraction as localPredictDti,
+} from '../../server/services/drugIntelligenceService.js'
+
 const API_BASE = '/api/drugs'
 const STORAGE_PREFIX = 'aegis_drug_intel_'
 const FAVORITES_KEY = `${STORAGE_PREFIX}favorites`
@@ -33,24 +42,16 @@ export async function searchDrugs(query) {
     const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query.trim())}`)
     if (res.ok) {
       const data = await res.json()
-      return data.results || []
+      if (Array.isArray(data.results) && data.results.length > 0) {
+        return data.results
+      }
     }
   } catch (err) {
     console.warn('[DrugIntelService] Search API failed, using fallback filter', err)
   }
 
-  // Fallback to local flagship filter
-  const q = query.toLowerCase().trim()
-  return FLAGSHIP_DRUGS.filter(d => 
-    d.name.toLowerCase().includes(q) || 
-    d.class.toLowerCase().includes(q) || 
-    d.id.toLowerCase().includes(q)
-  ).map(d => ({
-    id: d.id,
-    name: d.name,
-    class: d.class,
-    matchType: 'local_library'
-  }))
+  // Fallback to local search
+  return await searchFallbackDrugs(query)
 }
 
 /**
@@ -70,7 +71,17 @@ export async function getDrugProfile(idOrQuery) {
       }
     }
   } catch (err) {
-    console.warn('[DrugIntelService] getDrugProfile API failed, checking local cache/fallback', err)
+    console.warn('[DrugIntelService] getDrugProfile API failed, checking local fallback', err)
+  }
+
+  try {
+    const fallback = await getFallbackDrugProfile(idOrQuery)
+    if (fallback) {
+      recordRecentlyViewed(fallback)
+      return fallback
+    }
+  } catch (fallbackErr) {
+    console.warn('[DrugIntelService] Local fallback getDrugProfile failed', fallbackErr)
   }
 
   return null
@@ -87,22 +98,14 @@ export async function checkDrugInteraction(drugA, drugB) {
       body: JSON.stringify({ drugA, drugB })
     })
     if (res.ok) {
-      return await res.json()
+      const data = await res.json()
+      return data.interaction || data
     }
   } catch (err) {
-    console.warn('[DrugIntelService] checkDrugInteraction API failed', err)
+    console.warn('[DrugIntelService] checkDrugInteraction API failed, using local engine', err)
   }
 
-  // Fallback DDI computation
-  return {
-    drugA: drugA?.name || 'Drug A',
-    drugB: drugB?.name || 'Drug B',
-    severity: 'Unknown',
-    mechanism: 'Unable to connect to DDI evaluation server.',
-    description: 'Please ensure the backend API server is running to calculate full CYP-mediated interaction profiles.',
-    recommendation: 'Consult clinical literature and avoid co-administration without monitoring.',
-    cypOverlap: []
-  }
+  return await analyzeDrugDrugInteraction(drugA, drugB)
 }
 
 /**
@@ -117,13 +120,13 @@ export async function askDrugQuestion(drug, question) {
     })
     if (res.ok) {
       const data = await res.json()
-      return data.answer
+      return typeof data === 'string' ? data : (data.answer || data)
     }
   } catch (err) {
-    console.warn('[DrugIntelService] askDrugQuestion API failed', err)
+    console.warn('[DrugIntelService] askDrugQuestion API failed, using local analyst', err)
   }
 
-  return `Based on the profile of ${drug?.name || 'this compound'}, this drug belongs to the class "${drug?.class || 'N/A'}" with primary target(s) ${drug?.targets?.map(t => t.name).join(', ') || 'N/A'}. (Offline fallback answer).`
+  return localAnswerDrugQuestion(drug, question)
 }
 
 /**
@@ -137,26 +140,14 @@ export async function predictDrugTargetInteraction(drug, targetName) {
       body: JSON.stringify({ drug, targetName })
     })
     if (res.ok) {
-      return await res.json()
+      const data = await res.json()
+      return data.prediction || data
     }
   } catch (err) {
-    console.warn('[DrugIntelService] predictDrugTargetInteraction API failed', err)
+    console.warn('[DrugIntelService] predictDrugTargetInteraction API failed, using local model', err)
   }
 
-  return {
-    drugName: drug?.name,
-    targetName,
-    predictedAffinity: '7.20 -log(Kd)',
-    interactionProbability: 0.84,
-    confidenceCategory: 'High Confidence',
-    experimentalEvidence: 'Curated bioactivity records available',
-    featureAttributions: [
-      { feature: 'Lipophilicity match (LogP)', contribution: 0.32, direction: 'positive' },
-      { feature: 'H-Bond Donors & Acceptors', contribution: 0.28, direction: 'positive' },
-      { feature: 'Aromatic Ring Stacking', contribution: 0.22, direction: 'positive' },
-      { feature: 'Rotatable Bonds Flexibility', contribution: -0.09, direction: 'negative' }
-    ]
-  }
+  return localPredictDti(drug, targetName)
 }
 
 // ==========================================

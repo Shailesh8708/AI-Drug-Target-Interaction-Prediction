@@ -245,6 +245,9 @@ app.post('/api/structure/ask', async (req, res) => {
     res.json(answer)
   } catch (err) {
     res.status(500).json({ error: 'AI interpretation failed', message: err.message })
+  }
+})
+
 // ==========================================
 // DRUG INTELLIGENCE & ANALYSIS API ENDPOINTS
 // ==========================================
@@ -294,7 +297,7 @@ app.post('/api/drugs/ask', async (req, res) => {
       drugProfile = await getDrugProfile(drug)
     }
     const answer = answerDrugQuestion(drugProfile, question)
-    res.json(answer)
+    res.json({ answer })
   } catch (err) {
     res.status(500).json({ error: 'Drug AI interpretation failed', message: err.message })
   }
