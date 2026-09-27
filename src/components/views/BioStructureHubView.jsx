@@ -45,12 +45,16 @@ import ProteinSimilarityAlignment from '../biostructure/ProteinSimilarityAlignme
 import StructureInterpreterAI from '../biostructure/StructureInterpreterAI.jsx'
 import DTIContextTimeline from '../biostructure/DTIContextTimeline.jsx'
 import StructureReportModal from '../biostructure/StructureReportModal.jsx'
+import ProteinSequenceAnalysisPanel from '../biostructure/ProteinSequenceAnalysisPanel.jsx'
+import ProteinFunctionalDomainsPanel from '../biostructure/ProteinFunctionalDomainsPanel.jsx'
 import '../biostructure/biostructure.css'
 
 const TABS = [
   { id: 'overview', label: 'Overview & 3D', icon: Layers },
+  { id: 'sequence', label: 'Sequence & Biophysics', icon: Dna, badge: 'Analytics' },
+  { id: 'domains', label: 'Functional Domains', icon: Sparkles, badge: 'UniProt' },
   { id: 'pocket', label: 'Binding Site Intelligence', icon: Flame, badge: 'Signature' },
-  { id: 'chains', label: 'Chains & Sequence', icon: Dna },
+  { id: 'chains', label: 'Chains & Structure', icon: Layers },
   { id: 'ligand', label: 'Ligand Intelligence', icon: Pill },
   { id: 'nucleic', label: 'Nucleic & Metals', icon: Atom },
   { id: 'ai', label: 'AI Interpreter', icon: BrainCircuit, badge: 'AI' },
@@ -64,6 +68,8 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
   const [pocketData, setPocketData] = useState(null)
   const [interpretation, setInterpretation] = useState('')
   const [similarMolecules, setSimilarMolecules] = useState([])
+  const [universalProtein, setUniversalProtein] = useState(null)
+  const [highlightedResidues, setHighlightedResidues] = useState(null)
 
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState(null)
@@ -85,14 +91,19 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
   const [showReportModal, setShowReportModal] = useState(false)
 
   // Load structure data
-  const loadStructureData = useCallback(async (pdbId) => {
+  const loadStructureData = useCallback(async (queryOrId) => {
     setIsLoading(true)
     setErrorMessage(null)
     try {
-      const data = await loadCompleteBioStructure(pdbId, '', 4.5)
+      const data = await loadCompleteBioStructure(queryOrId, '', 4.5)
       setStructure(data.structure)
       setPocketData(data.pocketData)
       setInterpretation(data.interpretation)
+      setUniversalProtein(data.universalProtein)
+
+      if (data.structure?.metadata?.structureId) {
+        setCurrentPdbId(data.structure.metadata.structureId)
+      }
 
       // Set active ligand if available
       const primaryLigand = data.structure?.ligands?.[0]?.id || 'CPF'
@@ -106,7 +117,7 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
         setSimilarMolecules([])
       }
     } catch (err) {
-      setErrorMessage(`Failed to load structure ${pdbId}: ${err.message || 'Unknown error'}`)
+      setErrorMessage(`Failed to resolve structure for "${queryOrId}": ${err.message || 'Unknown error'}`)
     } finally {
       setIsLoading(false)
     }
@@ -130,11 +141,17 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
     }
   }
 
-  // Handle Search
-  const handleSearch = (searchedId) => {
-    const clean = searchedId.trim().toUpperCase()
-    setCurrentPdbId(clean)
-    setNotice(`Querying BioStructure repository for ${clean}...`)
+  // Handle Universal Search
+  const handleSearch = (searchedQuery) => {
+    const clean = searchedQuery.trim()
+    setNotice(`Resolving biostructure & protein profile for "${clean}"...`)
+    loadStructureData(clean)
+  }
+
+  // Bridge to Drug Intelligence module
+  const handleNavigateToDrugIntel = (ligandName) => {
+    setNotice(`Transferring ${ligandName || 'Ligand'} to Drug Intelligence Platform...`)
+    navigate('drug-intel', { search: ligandName })
   }
 
   // Handle Story step change
@@ -170,6 +187,7 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
       {/* Header with Search, Presets and Mode Toggles */}
       <StructureSearchHeader
         currentPdbId={currentPdbId}
+        currentProtein={universalProtein}
         onSearch={handleSearch}
         isLoading={isLoading}
         presentationMode={presentationMode}
@@ -183,10 +201,10 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
       {/* Presentation Mode Hero Overlay Banner */}
       {presentationMode && (
         <div className="presentation-overlay-card">
-          <h2>{meta.title || currentPdbId}</h2>
+          <h2>{universalProtein?.name || meta.title || currentPdbId}</h2>
           <div className="present-stats-row">
-            <span><strong>PDB:</strong> {currentPdbId}</span>
-            <span><strong>Organism:</strong> {meta.organism || 'N/A'}</span>
+            <span><strong>ID:</strong> {currentPdbId}</span>
+            <span><strong>Organism:</strong> {universalProtein?.organism || meta.organism || 'N/A'}</span>
             <span><strong>Method:</strong> {meta.experimentalMethod} ({meta.resolution ? `${meta.resolution} Å` : 'N/A'})</span>
             <span><strong>Chains:</strong> {structure?.chains?.length || 0}</span>
             <span><strong>Ligand:</strong> {primaryLigand?.name || primaryLigand?.id || 'None'}</span>
@@ -278,12 +296,13 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
           representation={representation}
           selectedResidueId={selectedResidueId}
           selectedLigandId={selectedLigandId}
+          highlightedResidues={highlightedResidues}
           pocketData={pocketData}
           showPocket={showPocket}
           showInteractions={showInteractions}
           cameraPreset={cameraPreset}
           onSelectResidue={(resId) => {
-            setSelectedResidueId(resId)
+            setSelectedResidueId(String(resId))
             setNotice(`Inspecting residue ${resId}`)
           }}
           onSelectLigand={(ligId) => {
@@ -327,6 +346,34 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
         <div className="hub-tab-content-panel">
           {activeTab === 'overview' && (
             <div className="overview-tab-flow">
+              {/* Provenance Tiers Badges */}
+              <div className="provenance-tiers-banner">
+                <div className="tier-pill experimental">
+                  <span className="tier-tag">[EXPERIMENTAL STRUCTURE]</span>
+                  <span className="tier-desc">
+                    {universalProtein?.provenanceTiers?.structure || `${meta.experimentalMethod || 'X-Ray Diffraction'} (${meta.resolution ? `${meta.resolution} Å` : 'Atomic Precision'})`}
+                  </span>
+                </div>
+                <div className="tier-pill calculated">
+                  <span className="tier-tag">[CALCULATED INFORMATION]</span>
+                  <span className="tier-desc">
+                    Real-time atomic coordinates, pocket radius &le;{cutoff} Å, and C&alpha; alignment
+                  </span>
+                </div>
+                <div className="tier-pill annotation">
+                  <span className="tier-tag">[DATABASE ANNOTATION]</span>
+                  <span className="tier-desc">
+                    Curated wwPDB &amp; UniProtKB ({universalProtein?.uniprotId || 'wwPDB'}) biological definitions
+                  </span>
+                </div>
+                <div className="tier-pill ai">
+                  <span className="tier-tag">[AI INTERPRETATION]</span>
+                  <span className="tier-desc">
+                    Aegis computational structural biology inference &amp; DTI assessment
+                  </span>
+                </div>
+              </div>
+
               <BiologicalAssemblyQuality
                 structure={structure}
                 onAssemblyChange={(asmId) => setNotice(`Biological assembly set to ${asmId}`)}
@@ -336,7 +383,7 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
                 <div className="panel-heading compact">
                   <div>
                     <p className="eyebrow">Structural Provenance & Deposited Entities</p>
-                    <h3>{meta.title || currentPdbId}</h3>
+                    <h3>{universalProtein?.name || meta.title || currentPdbId}</h3>
                   </div>
                   <span className="source-tag">{meta.source || 'RCSB Protein Data Bank'}</span>
                 </div>
@@ -364,6 +411,42 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
                 </div>
               </div>
             </div>
+          )}
+
+          {activeTab === 'sequence' && (
+            <ProteinSequenceAnalysisPanel
+              sequence={universalProtein?.sequence || structure?.chains?.[0]?.sequence || ''}
+              sequenceMetrics={universalProtein?.sequenceMetrics}
+              proteinName={universalProtein?.name || meta.title || currentPdbId}
+              selectedResidueId={selectedResidueId}
+              onSelectResidue={(resId) => {
+                setSelectedResidueId(String(resId))
+                setHighlightedResidues({ position: Number(resId) })
+                setCameraPreset('protein')
+                setNotice(`Synchronized residue ${resId} in 3D viewport`)
+              }}
+              setNotice={setNotice}
+            />
+          )}
+
+          {activeTab === 'domains' && (
+            <ProteinFunctionalDomainsPanel
+              domains={universalProtein?.domains || []}
+              activeSites={universalProtein?.activeSites || []}
+              metalBinding={universalProtein?.metalBinding || []}
+              sequenceLength={universalProtein?.sequence?.length || structure?.chains?.[0]?.sequence?.length || 300}
+              onHighlightResidues={(highlight) => {
+                setHighlightedResidues(highlight)
+                if (highlight.position) {
+                  setSelectedResidueId(String(highlight.position))
+                  setCameraPreset('pocket')
+                } else {
+                  setCameraPreset('protein')
+                }
+                setNotice(`Highlighted ${highlight.label || highlight.type} in 3D canvas`)
+              }}
+              learnMode={learnMode}
+            />
           )}
 
           {activeTab === 'pocket' && (
@@ -406,6 +489,7 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
                 setCameraPreset('ligand')
               }}
               onNavigateToComparison={handleNavigateToComparison}
+              onNavigateToDrugIntel={handleNavigateToDrugIntel}
               learnMode={learnMode}
               setNotice={setNotice}
             />
@@ -444,6 +528,14 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
           )}
         </div>
       )}
+
+      {/* Research Disclaimer */}
+      <div className="research-disclaimer-banner">
+        <ShieldCheck size={18} className="text-emerald" />
+        <span>
+          <strong>Scientific Research Notice:</strong> BioStructure Intelligence Hub provides structural bioinformatics analysis for research and educational purposes. In-silico predictions and atomic models do not constitute medical, diagnostic, or therapeutic directives.
+        </span>
+      </div>
 
       {/* Structure Intelligence Report Modal */}
       {showReportModal && (

@@ -41,6 +41,7 @@ export default function BioStructure3DViewer({
   representation = 'cartoon',
   selectedResidueId = null,
   selectedLigandId = null,
+  highlightedResidues = null,
   pocketData = null,
   showPocket = false,
   showInteractions = true,
@@ -186,7 +187,11 @@ export default function BioStructure3DViewer({
       positions.push(px, py, pz)
 
       const isPocket = pocketResidueSet.has(atom.residueId)
-      const isSelected = selectedResidueId === atom.residueId
+      const isSelected = selectedResidueId === atom.residueId || selectedResidueId === String(atom.resNum)
+      const isHighlighted = highlightedResidues && (
+        (highlightedResidues.position && atom.resNum === highlightedResidues.position) ||
+        (highlightedResidues.start && highlightedResidues.end && atom.resNum >= highlightedResidues.start && atom.resNum <= highlightedResidues.end)
+      )
       const isLigand = atom.record === 'HETATM' && !atom.isWater && !atom.isMetal && !atom.isNucleic
       const isMetal = atom.isMetal
 
@@ -194,6 +199,8 @@ export default function BioStructure3DViewer({
 
       if (isSelected) {
         c.set('#ffffff')
+      } else if (isHighlighted) {
+        c.set('#facc15') // Luminous gold for active sites / highlighted domain
       } else if (isPocket) {
         c.set('#10b981') // Glowing emerald for binding pocket residues
       } else if (isLigand) {

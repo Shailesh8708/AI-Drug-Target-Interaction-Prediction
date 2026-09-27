@@ -21,6 +21,12 @@ import {
   answerDrugQuestion,
   predictDrugTargetInteraction,
 } from './services/drugIntelligenceService.js'
+import {
+  searchUniversalProteins,
+  resolveUniversalProtein,
+  calculateSequenceMetrics,
+  classifyProteinQuery,
+} from './services/universalProteinService.js'
 
 const app = express()
 const port = process.env.PORT || 4000
@@ -146,6 +152,42 @@ app.get('/api/compounds/:cid/3d', async (req, res) => {
 // ==========================================
 // BIOSTRUCTURE INTELLIGENCE HUB API ENDPOINTS
 // ==========================================
+
+// Search biostructures and proteins across UniProt, PDB, and catalog
+app.get('/api/structure/search', async (req, res) => {
+  const q = req.query.q || ''
+  try {
+    const results = await searchUniversalProteins(q)
+    res.json({ results })
+  } catch (err) {
+    res.status(500).json({ error: 'Protein search failed', message: err.message })
+  }
+})
+
+// Analyze arbitrary amino acid sequence or FASTA
+app.post('/api/structure/sequence-analyze', (req, res) => {
+  const { sequence } = req.body || {}
+  try {
+    const metrics = calculateSequenceMetrics(sequence)
+    if (!metrics) {
+      return res.status(400).json({ error: 'Invalid sequence provided' })
+    }
+    res.json({ metrics })
+  } catch (err) {
+    res.status(500).json({ error: 'Sequence analysis failed', message: err.message })
+  }
+})
+
+// Universal Protein Profile resolution (UniProt + PDB + Sequence + Domains)
+app.get('/api/structure/protein/:id', async (req, res) => {
+  const queryOrId = req.params.id
+  try {
+    const protein = await resolveUniversalProtein(queryOrId)
+    res.json({ protein })
+  } catch (err) {
+    res.status(404).json({ error: 'Protein not found', message: err.message })
+  }
+})
 
 // Get parsed structure metadata and hierarchy
 app.get('/api/structure/:id', async (req, res) => {
