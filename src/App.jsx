@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Activity, ArrowUpRight, Atom, Bell, Bot, BrainCircuit, CalendarDays, ChevronRight,
-  CircleHelp, FlaskConical, LayoutDashboard, Menu, Package, Pill, Search, Settings2,
+  CircleHelp, Dna, FlaskConical, GitCompare, LayoutDashboard, Menu, Package, Pill, Search, Settings2,
   ShieldCheck, Sparkles, Target, Wand2, X,
 } from 'lucide-react'
 import MoleculeScene from './components/MoleculeScene'
@@ -12,17 +12,21 @@ import './components/bipasha/bipasha.css'
 
 import MoleculeLabView from './components/views/MoleculeLabView'
 import VisualizeCompoundView from './components/views/VisualizeCompoundView'
+import StructureComparisonView from './components/views/StructureComparisonView'
 import MolecularProteinStudioView from './components/views/MolecularProteinStudioView'
 import DrugAnalysisView from './components/views/DrugAnalysisView'
 import TargetAnalysisView from './components/views/TargetAnalysisView'
 import ExpiryMonitorView from './components/views/ExpiryMonitorView'
 import ResearchHubView from './components/views/ResearchHubView'
+import BioStructureHubView from './components/views/BioStructureHubView'
 
 const navItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'biostructure', label: 'BioStructure Intelligence Hub', icon: Dna, tag: 'New' },
   { id: 'dti', label: 'DTI Lab', icon: FlaskConical, tag: 'Research' },
   { id: 'molecules', label: 'Molecule Lab', icon: Atom, tag: '3D' },
-  { id: 'visualize', label: 'Visualize Compound', icon: Atom, tag: 'New' },
+  { id: 'visualize', label: 'Visualize Compound', icon: Atom, tag: 'Explore' },
+  { id: 'compare', label: 'Structure Comparison', icon: GitCompare, tag: 'Compare' },
   { id: 'studio', label: 'Molecular Studio', icon: Wand2, tag: 'Build' },
   { id: 'drugs', label: 'Drug Analysis', icon: Pill },
   { id: 'targets', label: 'Target Analysis', icon: Target },
@@ -98,9 +102,11 @@ function App() {
 
           {/* Page Routing */}
           {activePage === 'overview' && <Dashboard navigate={navigate} setNotice={setNotice} />}
+          {activePage === 'biostructure' && <BioStructureHubView setNotice={setNotice} navigate={navigate} />}
           {activePage === 'dti' && <DtiLab setNotice={setNotice} />}
           {activePage === 'molecules' && <MoleculeLabView setNotice={setNotice} />}
-          {activePage === 'visualize' && <VisualizeCompoundView setNotice={setNotice} />}
+          {activePage === 'visualize' && <VisualizeCompoundView setNotice={setNotice} navigate={navigate} />}
+          {activePage === 'compare' && <StructureComparisonView setNotice={setNotice} navigate={navigate} />}
           {activePage === 'studio' && <MolecularProteinStudioView setNotice={setNotice} navigate={navigate} />}
           {activePage === 'drugs' && <DrugAnalysisView setNotice={setNotice} />}
           {activePage === 'targets' && <TargetAnalysisView setNotice={setNotice} />}
@@ -125,11 +131,11 @@ function PageIntro({ eyebrow, title, children, action }) {
 
 function Dashboard({ navigate, setNotice }) {
   return <div className="page-wrap">
-    <PageIntro eyebrow="Tuesday · 22 September 2026" title="Good morning, researcher."><span>Your workspace is ready for the next question.</span><button className="text-action" onClick={() => navigate('dti')}>Open DTI Lab <ArrowUpRight size={15} /></button></PageIntro>
+    <PageIntro eyebrow="Tuesday · 22 September 2026" title="Good morning, researcher."><span>Your workspace is ready for the next question.</span><button className="text-action" onClick={() => navigate('biostructure')}>Explore BioStructure Hub <ArrowUpRight size={15} /></button></PageIntro>
     <section className="hero-panel">
-      <div className="hero-copy"><div className="signal-line"><span className="pulse-dot" /> RESEARCH ENVIRONMENT · PHASE 01</div><h2>Where molecular<br /><i>questions become</i> signals.</h2><p>Aegis brings computational biology and everyday medicine management into one clear, research-ready workspace.</p><button className="primary-button" onClick={() => navigate('dti')}><FlaskConical size={16} /> Start a prediction study <ArrowUpRight size={15} /></button></div>
+      <div className="hero-copy"><div className="signal-line"><span className="pulse-dot" /> RESEARCH ENVIRONMENT · PHASE 01</div><h2>Where molecular<br /><i>questions become</i> signals.</h2><p>Aegis brings computational biology, protein–ligand intelligence, and everyday medicine management into one clear, research-ready workspace.</p><div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}><button className="primary-button" onClick={() => navigate('biostructure')}><Dna size={16} /> Explore BioStructure Hub <ArrowUpRight size={15} /></button><button className="outline-button" onClick={() => navigate('dti')}><FlaskConical size={16} /> DTI Lab</button><button className="outline-button" onClick={() => navigate('compare')}><GitCompare size={16} /> Compare structures</button></div></div>
       <MoleculeScene />
-      <div className="hero-foot"><span><span className="mini-dot green" /> Molecular processing layer</span><span><span className="mini-dot blue" /> Model registry standby</span><span><span className="mini-dot orange" /> 3 safety alerts</span></div>
+      <div className="hero-foot"><span><span className="mini-dot green" /> BioStructure 3D intelligence</span><span><span className="mini-dot blue" /> Model registry standby</span><span><span className="mini-dot orange" /> 3 safety alerts</span></div>
     </section>
     <div className="section-heading"><div><p className="eyebrow">At a glance</p><h2>Workspace pulse</h2></div><button className="quiet-button" onClick={() => setNotice('Dashboard data is local demo state for Phase 1')}>Last synced just now <Activity size={14} /></button></div>
     <section className="metrics-grid"><Metric icon={Target} label="Prediction studies" value="12" detail="This workspace" accent="coral" /><Metric icon={Package} label="Active medicines" value="18" detail="Across your cabinet" accent="green" /><Metric icon={Bell} label="Expiry watch" value="03" detail="Needs attention" accent="orange" /><Metric icon={BrainCircuit} label="Model registry" value="—" detail="No trained models yet" accent="blue" /></section>

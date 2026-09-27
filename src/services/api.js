@@ -28,3 +28,17 @@ export function resolveCompoundQuery(query) {
 export function autocompleteCompoundQuery(term) {
   return request(`/api/compounds/autocomplete?term=${encodeURIComponent(term)}`)
 }
+
+export function compareCompounds(queryA, queryB) {
+  return request('/api/compounds/compare', {
+    method: 'POST',
+    body: JSON.stringify({ queryA, queryB }),
+  })
+}
+
+export function compareCompoundObjects(compoundA, compoundB) {
+  return request('/api/compounds/compare', {
+    method: 'POST',
+    body: JSON.stringify({ compoundA, compoundB }),
+  })
+}

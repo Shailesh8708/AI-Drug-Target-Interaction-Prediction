@@ -9,6 +9,7 @@ import {
   Eye,
   Flame,
   Gauge,
+  GitCompare,
   Layers3,
   MapPinned,
   Orbit,
@@ -196,7 +197,7 @@ function readStoredFavorites() {
   }
 }
 
-export default function VisualizeCompoundView({ setNotice }) {
+export default function VisualizeCompoundView({ setNotice, navigate }) {
   const [query, setQuery] = useState('benzene')
   const [term, setTerm] = useState('benzene')
   const [compound, setCompound] = useState(getFallbackCompound('benzene'))
@@ -473,9 +474,14 @@ export default function VisualizeCompoundView({ setNotice }) {
           <h1>Visualize the Compound</h1>
           <p className="intro-copy">Resolve a molecule by name, formula, SMILES, or identifier and inspect structure, properties, and 3D chemistry interactively.</p>
         </div>
-        <button className="primary-button small" onClick={() => loadCompound(term)}>
-          <Search size={15} /> Search compound
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button className="outline-button small" onClick={() => navigate && navigate('compare')}>
+            <GitCompare size={15} /> Compare structures
+          </button>
+          <button className="primary-button small" onClick={() => loadCompound(term)}>
+            <Search size={15} /> Search compound
+          </button>
+        </div>
       </div>
 
       <section className="compound-search-card">

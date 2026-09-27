@@ -8,6 +8,24 @@
 
 export const BIPASHA_ACTIONS = [
   {
+    id: 'biostructure',
+    label: 'BioStructure Hub',
+    category: 'Discovery',
+    iconName: 'Dna',
+    description: 'Explore proteins, ligands, binding pockets and molecular interactions in 3D',
+    route: 'biostructure',
+    animationType: 'biostructure',
+    color: '#10b981',
+    badge: '3D Bio',
+    stages: [
+      { min: 0, max: 20, text: 'Querying BioStructure Repository...', subtext: 'Resolving PDB crystallographic coordinates and quaternary assembly' },
+      { min: 21, max: 45, text: 'Parsing Macromolecular Topology...', subtext: 'Classifying protein chains, nucleic acids, and metal coordination spheres' },
+      { min: 46, max: 70, text: 'Computing Active Binding Pocket...', subtext: 'Detecting 3D Euclidean contacts, H-bonds, and desolvation volume' },
+      { min: 71, max: 88, text: 'Synthesizing Structural Intelligence...', subtext: 'Mapping Tanimoto ligand similarity and DTI feature matrices' },
+      { min: 89, max: 100, text: 'BioStructure Intelligence Online', subtext: 'Entering 3D macromolecular laboratory' },
+    ],
+  },
+  {
     id: 'dti',
     label: 'DTI Lab',
     category: 'Discovery',
@@ -59,6 +77,24 @@ export const BIPASHA_ACTIONS = [
       { min: 46, max: 70, text: 'Generating molecular representation...', subtext: 'Building 2D and 3D structural views' },
       { min: 71, max: 88, text: 'Preparing 3D visualization...', subtext: 'Rotating the molecular scene and calculating labels' },
       { min: 89, max: 100, text: 'Compound workspace ready', subtext: 'Opening the interactive molecular visualization studio' },
+    ],
+  },
+  {
+    id: 'compare',
+    label: 'Structure Comparison',
+    category: 'Discovery',
+    iconName: 'GitCompare',
+    description: 'Compare molecular structures, Maximum Common Substructures (MCS), and Tanimoto similarity.',
+    route: 'compare',
+    animationType: 'visualize',
+    color: '#06b6d4',
+    badge: 'Compare',
+    stages: [
+      { min: 0, max: 20, text: 'Resolving comparative molecules...', subtext: 'Querying Compound A and Compound B topologies' },
+      { min: 21, max: 45, text: 'Aligning chemical scaffolds...', subtext: 'Computing Maximum Common Substructure (MCS)' },
+      { min: 46, max: 70, text: 'Calculating fingerprint similarity...', subtext: 'Generating circular Morgan/ECFP2 Tanimoto coefficients' },
+      { min: 71, max: 88, text: 'Mapping substituent differentials...', subtext: 'Evaluating physicochemical delta (Δ) profiles' },
+      { min: 89, max: 100, text: 'Comparison workspace active', subtext: 'Opening dual 2D/3D comparative laboratory' },
     ],
   },
   {
@@ -242,6 +278,16 @@ export function getStageForProgress(action, progress) {
  */
 export function getContextualGreeting(pageId) {
   switch (pageId) {
+    case 'biostructure':
+      return {
+        greeting: "Welcome to BioStructure Intelligence Hub! Let's explore 3D protein–ligand complexes.",
+        subtext: "Inspect active binding pockets, evaluate crystallographic contacts, and analyze structural mechanisms.",
+        quickActions: [
+          { label: 'Explore 2XCT (DNA Gyrase)', query: 'Explore 2XCT structure' },
+          { label: 'Analyze Binding Pocket', query: 'Analyze binding pocket' },
+          { label: 'Ask AI Interpreter', query: 'Why is this ligand located here?' },
+        ],
+      }
     case 'dti':
       return {
         greeting: "Hello! Ready to explore a drug–target interaction study?",
@@ -270,6 +316,17 @@ export function getContextualGreeting(pageId) {
           { label: 'Visualize Benzene', query: 'Visualize benzene' },
           { label: 'Show Properties', query: 'Show molecular properties' },
           { label: 'Show 3D Structure', query: 'Show the 3D structure' },
+        ],
+      }
+    case 'compare':
+      return {
+        greeting: "Welcome to Structure Comparison & Substructure Analysis!",
+        subtext: "Compare molecular structures, identify Maximum Common Substructures (MCS), and analyze Tanimoto similarity.",
+        quickActions: [
+          { label: 'Benzene vs Toluene', query: 'Compare benzene and toluene' },
+          { label: 'Caffeine vs Theobromine', query: 'Compare caffeine and theobromine' },
+          { label: 'Show Properties', actionId: 'compare' },
+          { label: 'Open 3D Visualizer', actionId: 'visualize' },
         ],
       }
     case 'studio':
@@ -401,6 +458,28 @@ export function parseAgentIntent(rawQuery) {
   }
 
   // Navigation intents
+  if (
+    query.includes('biostructure') ||
+    query.includes('2xct') ||
+    query.includes('1hsg') ||
+    query.includes('4cox') ||
+    query.includes('3ert') ||
+    query.includes('pdb') ||
+    query.includes('protein structure') ||
+    query.includes('binding pocket') ||
+    query.includes('dna gyrase') ||
+    query.includes('macromolecule') ||
+    query.includes('ligand interaction') ||
+    query.includes('active site')
+  ) {
+    return {
+      type: 'navigate',
+      targetAction: 'biostructure',
+      text: "Opening BioStructure Intelligence Hub to analyze 3D macromolecular structures, binding pockets, and molecular interactions.",
+      actionLabel: 'Launch BioStructure Hub',
+    }
+  }
+
   if (query.includes('dti') || query.includes('drug target') || query.includes('predict interaction') || query.includes('interaction study') || query.includes('compose study')) {
     return {
       type: 'navigate',
@@ -416,6 +495,24 @@ export function parseAgentIntent(rawQuery) {
       targetAction: 'studio',
       text: "Opening Molecular Studio for structured chemical editing and inspection.",
       actionLabel: 'Open Molecular Studio',
+    }
+  }
+
+  if (
+    query.includes('compare') ||
+    query.includes('comparison') ||
+    query.includes('substructure') ||
+    query.includes('tanimoto') ||
+    query.includes('mcs') ||
+    query.includes('difference between') ||
+    query.includes('compare structures') ||
+    query.includes('structural similarity')
+  ) {
+    return {
+      type: 'navigate',
+      targetAction: 'compare',
+      text: "Opening Molecular Structure Comparison to inspect common scaffolds, Tanimoto similarity, and property deltas.",
+      actionLabel: 'Compare Structures',
     }
   }
 

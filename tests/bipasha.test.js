@@ -10,9 +10,11 @@ import {
 
 test('Action Registry contains all 10 required project modules', () => {
   const expectedModules = [
+    'biostructure',
     'dti',
     'molecules',
     'visualize',
+    'compare',
     'studio',
     'drugs',
     'targets',
@@ -24,7 +26,7 @@ test('Action Registry contains all 10 required project modules', () => {
     'research',
   ]
 
-  assert.equal(BIPASHA_ACTIONS.length, 12)
+  assert.equal(BIPASHA_ACTIONS.length, 14)
 
   expectedModules.forEach((modId) => {
     const action = getActionById(modId)
@@ -79,6 +81,10 @@ test('Intent parser accurately maps natural language requests to actions', () =>
   assert.equal(visualizeIntent.type, 'navigate')
   assert.equal(visualizeIntent.targetAction, 'visualize')
 
+  const compareIntent = parseAgentIntent('Compare benzene and toluene')
+  assert.equal(compareIntent.type, 'navigate')
+  assert.equal(compareIntent.targetAction, 'compare')
+
   const studioIntent = parseAgentIntent('Open Molecular Studio')
   assert.equal(studioIntent.type, 'navigate')
   assert.equal(studioIntent.targetAction, 'studio')
@@ -90,6 +96,10 @@ test('Intent parser accurately maps natural language requests to actions', () =>
   const resIntent = parseAgentIntent('Show research papers and methodology')
   assert.equal(resIntent.type, 'navigate')
   assert.equal(resIntent.targetAction, 'research')
+
+  const bioIntent = parseAgentIntent('Explore 2XCT protein structure and binding pocket')
+  assert.equal(bioIntent.type, 'navigate')
+  assert.equal(bioIntent.targetAction, 'biostructure')
 })
 
 test('Intent parser enforces non-clinical and non-prescriptive safety boundaries', () => {
@@ -105,8 +115,14 @@ test('Intent parser enforces non-clinical and non-prescriptive safety boundaries
 })
 
 test('Contextual greetings adapt properly to active route', () => {
+  const bioGreet = getContextualGreeting('biostructure')
+  assert.match(bioGreet.greeting, /BioStructure Intelligence/i)
+
   const dtiGreet = getContextualGreeting('dti')
   assert.match(dtiGreet.greeting, /drug–target interaction/i)
+
+  const compareGreet = getContextualGreeting('compare')
+  assert.match(compareGreet.greeting, /Structure Comparison/i)
 
   const medGreet = getContextualGreeting('medicines')
   assert.match(medGreet.greeting, /medicine inventory/i)
