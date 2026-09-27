@@ -17,6 +17,8 @@
 import { resolveCompound } from './compoundResolver.js'
 import { calculateTanimotoSimilarity } from './structureComparison.js'
 import { parseSmiles } from '../../src/services/molecularModel.js'
+import { resolveUniversalEntity, classifyEntity, PROTEIN_CATALOG } from './universalEntityService.js'
+import { PERIODIC_TABLE, isElement, getElement, calculateElementComposition } from './periodicTableData.js'
 
 export const DRUG_INTELLIGENCE_LIBRARY = [
   {
@@ -2666,28 +2668,126 @@ DRUG_INTELLIGENCE_LIBRARY.forEach((drug) => {
 })
 
 /**
- * Searches the reference drug library and falls back to PubChem live resolution.
+ * Searches the reference drug library, periodic elements, proteins, PDB structures, and PubChem.
  */
 export async function searchDrugs(query) {
   if (!query || !query.trim()) {
-    return DRUG_INTELLIGENCE_LIBRARY.map((d) => ({
+    // Rich default catalog spanning elements, drugs, proteins, complexes, and organic compounds
+    const libraryItems = DRUG_INTELLIGENCE_LIBRARY.slice(0, 10).map((d) => ({
       id: d.id,
       name: d.name,
       genericName: d.genericName,
       formula: d.formula,
       mw: d.mw,
       drugClass: d.drugClass,
+      entityType: 'DRUG',
+      categoryLabel: 'Drug / Small Molecule',
       pubchemCid: d.pubchemCid,
       chemblId: d.chemblId,
       targetsCount: d.targets.length,
       bioactivityCount: d.bioactivity.length,
       source: 'Aegis Curated Library',
     }))
+
+    const elementPresets = [
+      { id: 'iron', name: 'Iron (Fe)', genericName: 'Elemental Iron', formula: 'Fe', mw: 55.85, drugClass: 'Transition Metal (Z=26)', entityType: 'ELEMENT', categoryLabel: 'Chemical Element', symbol: 'Fe', atomicNumber: 26, source: 'IUPAC Periodic Table' },
+      { id: 'gold', name: 'Gold (Au)', genericName: 'Elemental Gold', formula: 'Au', mw: 196.97, drugClass: 'Transition Metal (Z=79)', entityType: 'ELEMENT', categoryLabel: 'Chemical Element', symbol: 'Au', atomicNumber: 79, source: 'IUPAC Periodic Table' },
+      { id: 'carbon', name: 'Carbon (C)', genericName: 'Elemental Carbon', formula: 'C', mw: 12.01, drugClass: 'Reactive Nonmetal (Z=6)', entityType: 'ELEMENT', categoryLabel: 'Chemical Element', symbol: 'C', atomicNumber: 6, source: 'IUPAC Periodic Table' },
+    ]
+
+    const bioPresets = [
+      { id: 'insulin', name: 'Insulin', genericName: 'Human Insulin Hormone', formula: 'C257H383N65O77S6', mw: 5808, drugClass: 'Peptide Hormone', entityType: 'PROTEIN', categoryLabel: 'Biological Macromolecule / Protein', uniprotId: 'P01308', source: 'UniProtKB' },
+      { id: '2xct', name: '2XCT', genericName: 'DNA Gyrase–Ciprofloxacin Ternary Complex', formula: 'Macromolecular Assembly', mw: 96000, drugClass: 'Type IIA Topoisomerase', entityType: 'PROTEIN-LIGAND COMPLEX', categoryLabel: 'Protein–Ligand Complex / Macromolecular Structure', pdbId: '2XCT', source: 'RCSB PDB' },
+      { id: 'benzene', name: 'Benzene', genericName: 'Benzene', formula: 'C6H6', mw: 78.11, drugClass: 'Aromatic Hydrocarbon', entityType: 'ORGANIC_COMPOUND', categoryLabel: 'Organic Compound', pubchemCid: 241, source: 'PubChem PUG REST' },
+      { id: 'glucose', name: 'Glucose', genericName: 'D-Glucose', formula: 'C6H12O6', mw: 180.16, drugClass: 'Monosaccharide', entityType: 'BIOMOLECULE', categoryLabel: 'Biomolecule / Metabolite', pubchemCid: 5793, source: 'PubChem PUG REST' },
+    ]
+
+    return [...libraryItems, ...elementPresets, ...bioPresets]
   }
 
   const q = query.trim().toLowerCase()
+  const results = []
 
-  // 1. Search in local reference library
+  // 1. Check if query is an Element
+  if (isElement(query)) {
+    const el = getElement(query)
+    if (el) {
+      results.push({
+        id: el.symbol.toLowerCase(),
+        name: `${el.name} (${el.symbol})`,
+        genericName: el.name,
+        formula: el.symbol,
+        mw: el.mass,
+        drugClass: `${el.category} (Element)`,
+        entityType: 'ELEMENT',
+        categoryLabel: 'Chemical Element',
+        symbol: el.symbol,
+        atomicNumber: el.number,
+        source: 'IUPAC Periodic Table',
+      })
+    }
+  }
+
+  // 2. Search all 118 elements by name or symbol substring
+  const elemMatches = PERIODIC_TABLE.filter(
+    (el) =>
+      el.symbol.toLowerCase() === q ||
+      el.name.toLowerCase().startsWith(q) ||
+      (q.length >= 3 && el.name.toLowerCase().includes(q))
+  ).slice(0, 3)
+
+  elemMatches.forEach((el) => {
+    if (!results.some((r) => r.symbol === el.symbol)) {
+      results.push({
+        id: el.symbol.toLowerCase(),
+        name: `${el.name} (${el.symbol})`,
+        genericName: el.name,
+        formula: el.symbol,
+        mw: el.mass,
+        drugClass: `${el.category} (Element)`,
+        entityType: 'ELEMENT',
+        categoryLabel: 'Chemical Element',
+        symbol: el.symbol,
+        atomicNumber: el.number,
+        source: 'IUPAC Periodic Table',
+      })
+    }
+  })
+
+  // 3. Search Protein Catalog & PDB ID patterns
+  if (/^[0-9][a-z0-9]{3}$/i.test(query)) {
+    results.push({
+      id: query.toUpperCase(),
+      name: `PDB ${query.toUpperCase()}`,
+      genericName: `Macromolecular Complex ${query.toUpperCase()}`,
+      formula: 'Macromolecular Assembly',
+      mw: 96000,
+      drugClass: 'Protein–Ligand Complex',
+      entityType: 'PROTEIN-LIGAND COMPLEX',
+      categoryLabel: 'Protein–Ligand Complex / Macromolecular Structure',
+      pdbId: query.toUpperCase(),
+      source: 'RCSB Protein Data Bank',
+    })
+  }
+
+  for (const [key, prot] of Object.entries(PROTEIN_CATALOG)) {
+    if (key.includes(q) || prot.name.toLowerCase().includes(q) || prot.uniprotId.toLowerCase() === q) {
+      results.push({
+        id: prot.uniprotId.toLowerCase(),
+        name: prot.name,
+        genericName: prot.name,
+        formula: prot.formula,
+        mw: prot.mw,
+        drugClass: 'Biological Macromolecule / Protein',
+        entityType: 'PROTEIN',
+        categoryLabel: 'Biological Macromolecule / Protein',
+        uniprotId: prot.uniprotId,
+        source: 'UniProtKB',
+      })
+    }
+  }
+
+  // 4. Search local reference library
   const localMatches = DRUG_INTELLIGENCE_LIBRARY.filter((d) => {
     return (
       d.id.toLowerCase().includes(q) ||
@@ -2704,44 +2804,52 @@ export async function searchDrugs(query) {
     )
   })
 
-  if (localMatches.length > 0) {
-    return localMatches.map((d) => ({
+  localMatches.forEach((d) => {
+    results.push({
       id: d.id,
       name: d.name,
       genericName: d.genericName,
       formula: d.formula,
       mw: d.mw,
       drugClass: d.drugClass,
+      entityType: 'DRUG',
+      categoryLabel: 'Drug / Small Molecule',
       pubchemCid: d.pubchemCid,
       chemblId: d.chemblId,
       targetsCount: d.targets.length,
       bioactivityCount: d.bioactivity.length,
       source: 'Aegis Curated Library',
-    }))
+    })
+  })
+
+  if (results.length > 0) {
+    return results
   }
 
-  // 2. Fall back to online compound resolution via PubChem
+  // 5. Fall back to online compound resolution via PubChem / Universal Entity
   try {
-    const resolved = await resolveCompound(q)
-    if (resolved) {
+    const universal = await resolveUniversalEntity(query)
+    if (universal && universal.success) {
       return [
         {
-          id: String(resolved.cid || resolved.name.toLowerCase().replace(/\s+/g, '-')),
-          name: resolved.name || query,
-          genericName: resolved.name,
-          formula: resolved.formula || 'N/A',
-          mw: resolved.molecularWeight || 0,
-          drugClass: 'Resolved Chemical Compound',
-          pubchemCid: resolved.cid,
-          chemblId: 'N/A',
-          targetsCount: 1,
-          bioactivityCount: 2,
-          source: 'PubChem PUG REST',
+          id: universal.id,
+          name: universal.name || query,
+          genericName: universal.genericName || universal.name,
+          formula: universal.formula || 'N/A',
+          mw: universal.mw || 0,
+          drugClass: universal.drugClass || universal.categoryLabel,
+          entityType: universal.entityType,
+          categoryLabel: universal.categoryLabel,
+          pubchemCid: universal.pubchemCid || null,
+          chemblId: universal.chemblId || 'N/A',
+          targetsCount: (universal.targets || []).length,
+          bioactivityCount: (universal.bioactivityRecords || []).length,
+          source: universal.sources?.[0]?.name || 'Universal Chemical Engine',
         },
       ]
     }
   } catch (err) {
-    console.warn('Online drug search fallback notice:', err.message)
+    console.warn('Universal search fallback notice:', err.message)
   }
 
   return []
@@ -2766,6 +2874,12 @@ export function normalizeDrug(found) {
 
   return {
     ...found,
+    entityType: found.entityType || 'DRUG',
+    categoryLabel: found.categoryLabel || found.drugClass || 'Small Molecule',
+    atoms: found.atoms || [],
+    bonds: found.bonds || [],
+    elementBreakdown: found.elementBreakdown || calculateElementComposition(found.formula, found.atoms),
+    functionalGroups: found.functionalGroups || [],
     class: found.drugClass || found.class || 'Therapeutic Agent',
     drugClass: found.drugClass || found.class || 'Therapeutic Agent',
     logP: found.properties?.logP ?? found.logP ?? 1.5,
@@ -2825,7 +2939,7 @@ export function normalizeDrug(found) {
       ...t,
     })),
     murckoScaffold: found.scaffold?.murcko || found.murckoScaffold || 'Aromatic Framework',
-    functionalGroups: (found.functionalGroups || []).map((f) =>
+    functionalGroupNames: (found.functionalGroups || []).map((f) =>
       typeof f === 'string' ? f : f.name
     ),
     aiSummary: found.description || `Comprehensive pharmacological profile for ${found.name}.`,
@@ -2833,7 +2947,7 @@ export function normalizeDrug(found) {
 }
 
 /**
- * Retrieves complete comprehensive drug profile.
+ * Retrieves complete comprehensive drug / chemical / macromolecule profile.
  */
 export async function getDrugProfile(idOrQuery) {
   if (!idOrQuery) throw new Error('Drug identifier is required')
@@ -2841,20 +2955,52 @@ export async function getDrugProfile(idOrQuery) {
     return normalizeDrug(idOrQuery)
   }
 
-  const clean = String(idOrQuery).trim().toLowerCase()
+  const clean = String(idOrQuery).trim()
+  const lower = clean.toLowerCase()
 
-  // 1. Check local library
+  // 1. Check if query is classified as an Element, PDB Complex, Protein, Peptide, or SMILES
+  const classification = classifyEntity(clean)
+  if (
+    classification.category === 'ELEMENT' ||
+    classification.category === 'PROTEIN-LIGAND COMPLEX' ||
+    classification.category === 'PROTEIN' ||
+    classification.category === 'PEPTIDE' ||
+    classification.category === 'SMILES'
+  ) {
+    const universal = await resolveUniversalEntity(clean)
+    if (universal && universal.success) {
+      return normalizeDrug(universal)
+    }
+  }
+
+  // 2. Check local curated library
   const found = DRUG_INTELLIGENCE_LIBRARY.find(
     (d) =>
-      d.id.toLowerCase() === clean ||
-      d.name.toLowerCase() === clean ||
-      String(d.pubchemCid) === clean ||
-      (d.chemblId && d.chemblId.toLowerCase() === clean) ||
-      (d.inchiKey && d.inchiKey.toLowerCase() === clean)
+      d.id.toLowerCase() === lower ||
+      d.name.toLowerCase() === lower ||
+      String(d.pubchemCid) === lower ||
+      (d.chemblId && d.chemblId.toLowerCase() === lower) ||
+      (d.inchiKey && d.inchiKey.toLowerCase() === lower)
   )
 
   if (found) {
-    return normalizeDrug(found)
+    const elementBreakdown = found.elementBreakdown || calculateElementComposition(found.formula, found.atoms)
+    return normalizeDrug({
+      ...found,
+      entityType: found.entityType || 'DRUG',
+      categoryLabel: found.categoryLabel || 'Drug / Small Molecule',
+      elementBreakdown,
+    })
+  }
+
+  // 3. Dynamically resolve from Universal Entity Service (PubChem, UniProt, RCSB PDB, Periodic Table)
+  try {
+    const universal = await resolveUniversalEntity(clean)
+    if (universal && universal.success) {
+      return normalizeDrug(universal)
+    }
+  } catch (err) {
+    console.warn('[UniversalEntity] Dynamic resolution notice:', err.message)
   }
 
   // 2. Dynamically resolve from PubChem

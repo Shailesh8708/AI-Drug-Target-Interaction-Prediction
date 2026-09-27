@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, Sparkles, BookOpen, Download, Bookmark, Pill, RefreshCw } from 'lucide-react'
+import { Search, Sparkles, BookOpen, Download, Bookmark, Pill, RefreshCw, Atom, Dna, FlaskConical } from 'lucide-react'
 import { FLAGSHIP_DRUGS, searchDrugs } from '../../services/drugIntelligenceService.js'
 
 export default function DrugSearchHeader({
@@ -28,7 +28,7 @@ export default function DrugSearchHeader({
       setSearchResults(results)
       setIsSearching(false)
       setDropdownOpen(true)
-    }, 280)
+    }, 250)
 
     return () => clearTimeout(timer)
   }, [query])
@@ -37,6 +37,29 @@ export default function DrugSearchHeader({
     setDropdownOpen(false)
     setQuery('')
     onSelectDrug(drugId)
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (searchResults.length > 0) {
+        handleSelect(searchResults[0].id || searchResults[0].name)
+      } else if (query.trim()) {
+        handleSelect(query.trim())
+      }
+    }
+  }
+
+  const getEntityIcon = (type) => {
+    switch (type) {
+      case 'ELEMENT':
+        return <Atom size={14} color="#10b981" />
+      case 'PROTEIN':
+      case 'PROTEIN-LIGAND COMPLEX':
+        return <Dna size={14} color="#38bdf8" />
+      default:
+        return <FlaskConical size={14} color="#f59e0b" />
+    }
   }
 
   return (
@@ -48,11 +71,11 @@ export default function DrugSearchHeader({
           </div>
           <div>
             <h1>
-              Drug Intelligence & Analysis
-              <span className="sub-badge">v2.5 Lab</span>
+              Universal Drug & Chemical Intelligence
+              <span className="sub-badge">v3.0 Dynamic</span>
             </h1>
             <p className="header-subtitle">
-              Explore drug structures, pharmacology, targets, bioactivity, ADME, interactions and AI-powered drug–target intelligence.
+              Dynamic analysis of all 118 periodic elements, organic & inorganic compounds, drug molecules, biomolecules, and macromolecular protein complexes.
             </p>
           </div>
         </div>
@@ -64,8 +87,8 @@ export default function DrugSearchHeader({
           <button className="action-btn-pill" onClick={onOpenReport} title="Export Research Dossier">
             <Download size={15} /> Export Dossier
           </button>
-          <button className="action-btn-pill primary" onClick={onOpenJourney} title="10-Step Storytelling Journey">
-            <BookOpen size={15} /> Drug Journey
+          <button className="action-btn-pill primary" onClick={onOpenJourney} title="Storytelling Journey">
+            <BookOpen size={15} /> Journey
           </button>
         </div>
       </div>
@@ -76,9 +99,10 @@ export default function DrugSearchHeader({
           <Search size={18} color="#64748b" />
           <input
             type="text"
-            placeholder="Search by drug name, brand, SMILES, InChIKey, PubChem CID, ChEMBL ID, or target..."
+            placeholder="Search any element, compound, drug, protein, PDB ID (e.g. Iron, Benzene, Aspirin, Insulin, 2XCT, CCO)..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
             onFocus={() => query.trim() && setDropdownOpen(true)}
           />
           {isSearching && <RefreshCw size={16} className="spin" color="#10b981" />}
@@ -86,19 +110,35 @@ export default function DrugSearchHeader({
 
         {dropdownOpen && searchResults.length > 0 && (
           <div className="search-results-dropdown">
-            {searchResults.map((res) => (
+            {searchResults.map((res, idx) => (
               <div
-                key={res.id || res.cid}
+                key={res.id || idx}
                 className="search-result-item"
                 onClick={() => handleSelect(res.id || res.name)}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
               >
-                <div>
-                  <strong>{res.name}</strong>
-                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                    {res.class || res.formula || 'Compound Record'}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {getEntityIcon(res.entityType)}
+                  <div>
+                    <strong style={{ color: '#f1f5f9' }}>{res.name}</strong>
+                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                      {res.categoryLabel || res.drugClass || res.formula || 'Chemical Record'}
+                    </div>
                   </div>
                 </div>
-                <small>{res.matchType || (res.cid ? `CID: ${res.cid}` : 'Curated')}</small>
+                <div style={{ textAlign: 'right' }}>
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      background: 'rgba(51, 65, 85, 0.4)',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      color: '#38bdf8',
+                    }}
+                  >
+                    {res.source || 'Curated'}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
@@ -107,13 +147,14 @@ export default function DrugSearchHeader({
 
       {/* Flagship Fast-Pills */}
       <div className="flagship-pills-row">
-        <span className="flagship-label">Flagship Reference Library:</span>
+        <span className="flagship-label">Flagship Explorations:</span>
         {FLAGSHIP_DRUGS.map((f) => (
           <button
             key={f.id}
             className={`flagship-pill ${activeDrugId === f.id ? 'active' : ''}`}
             onClick={() => handleSelect(f.id)}
             disabled={loading}
+            title={`${f.name} · ${f.categoryLabel || f.class}`}
           >
             {f.name.split(' ')[0]}
           </button>

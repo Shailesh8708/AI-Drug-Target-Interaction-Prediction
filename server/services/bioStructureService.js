@@ -11,17 +11,32 @@
  * - AI Structure Interpreter & grounded structural Q&A
  */
 
-import fs from 'node:fs/promises'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import {
   calculateTanimotoSimilarity,
 } from './structureComparison.js'
 import { parseSmiles } from '../../src/services/molecularModel.js'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const CACHE_DIR = path.resolve(__dirname, '../data/structures')
+let fs = null
+let path = null
+let CACHE_DIR = null
+
+async function initNodeFs() {
+  if (CACHE_DIR !== null) return
+  if (typeof process !== 'undefined' && process.versions?.node) {
+    try {
+      fs = (await import('node:fs/promises')).default
+      path = (await import('node:path')).default
+      const urlModule = await import('node:url')
+      const __filename = urlModule.fileURLToPath(import.meta.url)
+      const __dirname = path.dirname(__filename)
+      CACHE_DIR = path.resolve(__dirname, '../data/structures')
+    } catch {
+      CACHE_DIR = false
+    }
+  } else {
+    CACHE_DIR = false
+  }
+}
 
 const MEMORY_CACHE = new Map()
 
@@ -658,6 +673,7 @@ export function answerStructureQuestion(question, structure, pocketData) {
  * Retrieves structure, with cache and fallback.
  */
 export async function getStructureData(pdbId) {
+  await initNodeFs()
   const cleanId = String(pdbId).trim().toUpperCase()
   if (MEMORY_CACHE.has(cleanId)) {
     return MEMORY_CACHE.get(cleanId)
@@ -666,11 +682,13 @@ export async function getStructureData(pdbId) {
   let pdbText = null
 
   // 1. Try local file cache
-  try {
-    const filePath = path.join(CACHE_DIR, `${cleanId}.pdb`)
-    pdbText = await fs.readFile(filePath, 'utf-8')
-  } catch {
-    // Not cached locally
+  if (fs && path && CACHE_DIR) {
+    try {
+      const filePath = path.join(CACHE_DIR, `${cleanId}.pdb`)
+      pdbText = await fs.readFile(filePath, 'utf-8')
+    } catch {
+      // Not cached locally
+    }
   }
 
   // 2. Fetch from RCSB files if not cached
@@ -680,11 +698,13 @@ export async function getStructureData(pdbId) {
       if (response.ok) {
         pdbText = await response.text()
         // Save to cache dir
-        try {
-          await fs.mkdir(CACHE_DIR, { recursive: true })
-          await fs.writeFile(path.join(CACHE_DIR, `${cleanId}.pdb`), pdbText, 'utf-8')
-        } catch {
-          // non-critical if write fails
+        if (fs && path && CACHE_DIR) {
+          try {
+            await fs.mkdir(CACHE_DIR, { recursive: true })
+            await fs.writeFile(path.join(CACHE_DIR, `${cleanId}.pdb`), pdbText, 'utf-8')
+          } catch {
+            // non-critical if write fails
+          }
         }
       }
     } catch {

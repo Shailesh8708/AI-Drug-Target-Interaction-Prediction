@@ -19,27 +19,29 @@ const FAVORITES_KEY = `${STORAGE_PREFIX}favorites`
 const NOTES_KEY = `${STORAGE_PREFIX}notes`
 const RECENT_KEY = `${STORAGE_PREFIX}recent`
 
-// Flagship quick-fallback IDs
+// Flagship quick-fallback presets across diverse entity domains
 export const FLAGSHIP_DRUGS = [
-  { id: 'ciprofloxacin', name: 'Ciprofloxacin', class: 'Fluoroquinolone Antibacterial', cid: 2764 },
-  { id: 'aspirin', name: 'Aspirin (Acetylsalicylic Acid)', class: 'NSAID / Antiplatelet', cid: 2244 },
-  { id: 'caffeine', name: 'Caffeine', class: 'Methylxanthine CNS Stimulant', cid: 2519 },
-  { id: 'ibuprofen', name: 'Ibuprofen', class: 'NSAID (Propionic Acid Derivative)', cid: 3672 },
-  { id: 'paracetamol', name: 'Paracetamol (Acetaminophen)', class: 'Analgesic & Antipyretic', cid: 1983 },
-  { id: 'imatinib', name: 'Imatinib Mesylate', class: 'BCR-ABL Tyrosine Kinase Inhibitor', cid: 5291 },
-  { id: 'metformin', name: 'Metformin', class: 'Biguanide Antihyperglycemic', cid: 4091 },
-  { id: 'atorvastatin', name: 'Atorvastatin', class: 'HMG-CoA Reductase Inhibitor (Statin)', cid: 60823 },
-  { id: 'indomethacin', name: 'Indomethacin', class: 'Nonsteroidal Anti-inflammatory (NSAID)', cid: 3715 },
-  { id: 'tamoxifen', name: 'Tamoxifen', class: 'Selective Estrogen Receptor Modulator (SERM)', cid: 5376 },
+  { id: 'ciprofloxacin', name: 'Ciprofloxacin', class: 'Fluoroquinolone Antibacterial', categoryLabel: 'Drug / Small Molecule', entityType: 'DRUG', cid: 2764 },
+  { id: 'aspirin', name: 'Aspirin', class: 'NSAID / Antiplatelet', categoryLabel: 'Drug / Small Molecule', entityType: 'DRUG', cid: 2244 },
+  { id: 'iron', name: 'Iron (Fe)', class: 'Transition Metal (Z=26)', categoryLabel: 'Chemical Element', entityType: 'ELEMENT', symbol: 'Fe' },
+  { id: 'benzene', name: 'Benzene', class: 'Aromatic Hydrocarbon', categoryLabel: 'Organic Compound', entityType: 'ORGANIC_COMPOUND', formula: 'C6H6' },
+  { id: 'insulin', name: 'Insulin', class: 'Peptide Hormone', categoryLabel: 'Biological Macromolecule / Protein', entityType: 'PROTEIN', uniprotId: 'P01308' },
+  { id: '2xct', name: '2XCT', class: 'DNA Gyrase-Cipro Complex', categoryLabel: 'Macromolecular Structure', entityType: 'PROTEIN-LIGAND COMPLEX', pdbId: '2XCT' },
+  { id: 'glucose', name: 'Glucose', class: 'Monosaccharide', categoryLabel: 'Biomolecule / Metabolite', entityType: 'BIOMOLECULE', formula: 'C6H12O6' },
+  { id: 'caffeine', name: 'Caffeine', class: 'Methylxanthine CNS Stimulant', categoryLabel: 'Drug / Small Molecule', entityType: 'DRUG', cid: 2519 },
+  { id: 'paracetamol', name: 'Paracetamol', class: 'Analgesic & Antipyretic', categoryLabel: 'Drug / Small Molecule', entityType: 'DRUG', cid: 1983 },
+  { id: 'gold', name: 'Gold (Au)', class: 'Noble Transition Metal (Z=79)', categoryLabel: 'Chemical Element', entityType: 'ELEMENT', symbol: 'Au' },
+  { id: 'methanol', name: 'Methanol', class: 'Primary Alcohol', categoryLabel: 'Organic Compound', entityType: 'ORGANIC_COMPOUND', formula: 'CH4O' },
+  { id: 'atp', name: 'ATP', class: 'Nucleotide Triphosphate', categoryLabel: 'Biomolecule / Metabolite', entityType: 'BIOMOLECULE', formula: 'C10H16N5O13P3' },
 ]
 
 /**
- * Search drugs by name, synonym, target, or SMILES
+ * Search drugs, elements, compounds, and proteins by name, formula, or ID
  */
 export async function searchDrugs(query) {
-  if (!query || !query.trim()) return []
+  const cleanQ = (query || '').trim()
   try {
-    const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query.trim())}`)
+    const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(cleanQ)}`)
     if (res.ok) {
       const data = await res.json()
       if (Array.isArray(data.results) && data.results.length > 0) {
@@ -51,7 +53,7 @@ export async function searchDrugs(query) {
   }
 
   // Fallback to local search
-  return await searchFallbackDrugs(query)
+  return await searchFallbackDrugs(cleanQ)
 }
 
 /**

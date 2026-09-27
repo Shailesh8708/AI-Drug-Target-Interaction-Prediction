@@ -13,55 +13,54 @@ import {
   Layers,
   Sparkles,
   Info,
+  Atom,
 } from 'lucide-react'
+import { getElementColor, getElementVdwRadius, getElement } from '../../services/periodicTableData.js'
 
-const ELEMENT_COLORS = {
-  C: '#94a3b8',
-  N: '#38bdf8',
-  O: '#ef4444',
-  S: '#eab308',
-  P: '#f97316',
-  F: '#22c55e',
-  CL: '#10b981',
-  BR: '#b91c1c',
-  I: '#7e22ce',
-  H: '#f8fafc',
-}
-
-const ELEMENT_RADII = {
-  C: 0.45,
-  N: 0.42,
-  O: 0.4,
-  S: 0.55,
-  P: 0.52,
-  F: 0.38,
-  CL: 0.5,
-  BR: 0.6,
-  I: 0.65,
-  H: 0.25,
-}
-
-export default function DrugStructureViewer({ drug }) {
+export default function DrugStructureViewer({
+  drug,
+  highlightedElement = null,
+  highlightedIndices = [],
+}) {
   const [viewMode, setViewMode] = useState('3d') // '2d' | '3d'
   const [representation, setRepresentation] = useState('ball-stick') // 'ball-stick' | 'space-filling' | 'wireframe'
   const [autoRotate, setAutoRotate] = useState(true)
   const [selectedAtom, setSelectedAtom] = useState(null)
+  const [hoveredAtom, setHoveredAtom] = useState(null)
 
   const canvasContainerRef = useRef(null)
   const sceneStateRef = useRef(null)
 
   // Atoms and Bonds
-  const atoms = drug?.atoms || []
+  const rawAtoms = drug?.atoms || []
   const bonds = drug?.bonds || []
 
-  // Fallback 3D coordinates generator if drug only had 2D/SMILES
+  // If drug is an element (single atomic entity), synthesize an atomic lattice / orbital model
   const processedAtoms = useMemo(() => {
-    if (atoms.length > 0 && atoms.some((a) => a.z !== undefined && a.z !== 0)) {
-      return atoms
+    if (drug?.entityType === 'ELEMENT' || (!rawAtoms.length && drug?.symbol)) {
+      const sym = drug?.symbol || drug?.formula || 'Fe'
+      // Generate a representative 8-atom unit cell cube for elemental crystal structure
+      const d = 2.2
+      return [
+        { element: sym, x: -d, y: -d, z: -d, index: 0 },
+        { element: sym, x: d, y: -d, z: -d, index: 1 },
+        { element: sym, x: -d, y: d, z: -d, index: 2 },
+        { element: sym, x: d, y: d, z: -d, index: 3 },
+        { element: sym, x: -d, y: -d, z: d, index: 4 },
+        { element: sym, x: d, y: -d, z: d, index: 5 },
+        { element: sym, x: -d, y: d, z: d, index: 6 },
+        { element: sym, x: d, y: d, z: d, index: 7 },
+        { element: sym, x: 0, y: 0, z: 0, index: 8, isCenter: true },
+      ]
     }
-    // Synthesize pseudo-3D coordinates from 2D or ring topology
-    return atoms.map((a, i) => {
-      const angle = (i / Math.max(1, atoms.length)) * Math.PI * 2
+
+    if (rawAtoms.length > 0 && rawAtoms.some((a) => a.z !== undefined && a.z !== 0)) {
+      return rawAtoms
+    }
+
+    // Synthesize pseudo-3D coordinates from 2D coordinates or ring topology
+    return rawAtoms.map((a, i) => {
+      const angle = (i / Math.max(1, rawAtoms.length)) * Math.PI * 2
       const zOffset = Math.sin(angle * 2) * 1.2
       return {
         ...a,
@@ -70,7 +69,7 @@ export default function DrugStructureViewer({ drug }) {
         z: a.z ?? zOffset,
       }
     })
-  }, [atoms])
+  }, [rawAtoms, drug])
 
   // ==========================================
   // THREE.JS 3D RENDER LOOP
@@ -94,7 +93,7 @@ export default function DrugStructureViewer({ drug }) {
     container.appendChild(renderer.domElement)
 
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85)
     scene.add(ambientLight)
 
     const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.2)
@@ -122,20 +121,26 @@ export default function DrugStructureViewer({ drug }) {
       cz /= processedAtoms.length
     }
 
-    // Build Atoms
+    // Build Atoms using 118-element periodic colors and radii
     const atomMeshes = []
     processedAtoms.forEach((atom, idx) => {
       const elem = (atom.element || 'C').toUpperCase()
-      const colorHex = ELEMENT_COLORS[elem] || '#94a3b8'
-      const baseRadius = ELEMENT_RADII[elem] || 0.45
+      const colorHex = getElementColor(elem)
+      const baseRadius = getElementVdwRadius(elem) * 0.38
       const radius = representation === 'space-filling' ? baseRadius * 2.2 : baseRadius
 
-      const geom = new THREE.SphereGeometry(radius, 24, 24)
+      const isHighlighted =
+        (highlightedElement && elem === highlightedElement.toUpperCase()) ||
+        (highlightedIndices && highlightedIndices.includes(idx))
+
+      const geom = new THREE.SphereGeometry(isHighlighted ? radius * 1.25 : radius, 24, 24)
       const mat = new THREE.MeshStandardMaterial({
         color: colorHex,
-        roughness: 0.3,
-        metalness: 0.2,
+        roughness: 0.28,
+        metalness: 0.22,
         wireframe: representation === 'wireframe',
+        emissive: isHighlighted ? 0x10b981 : 0x000000,
+        emissiveIntensity: isHighlighted ? 0.65 : 0.0,
       })
 
       const mesh = new THREE.Mesh(geom, mat)
@@ -150,48 +155,76 @@ export default function DrugStructureViewer({ drug }) {
     })
 
     // Build Bonds (if not space-filling)
-    if (representation !== 'space-filling' && bonds.length > 0) {
-      bonds.forEach((bond) => {
-        const a1 = processedAtoms[bond.atom1] || processedAtoms.find((a) => a.index === bond.atom1)
-        const a2 = processedAtoms[bond.atom2] || processedAtoms.find((a) => a.index === bond.atom2)
-        if (!a1 || !a2) return
+    if (representation !== 'space-filling') {
+      if (bonds.length > 0) {
+        bonds.forEach((bond) => {
+          const a1 = processedAtoms[bond.atom1] || processedAtoms.find((a) => a.index === bond.atom1)
+          const a2 = processedAtoms[bond.atom2] || processedAtoms.find((a) => a.index === bond.atom2)
+          if (!a1 || !a2) return
 
-        const p1 = new THREE.Vector3(
-          (Number(a1.x) || 0) - cx,
-          (Number(a1.y) || 0) - cy,
-          (Number(a1.z) || 0) - cz
-        )
-        const p2 = new THREE.Vector3(
-          (Number(a2.x) || 0) - cx,
-          (Number(a2.y) || 0) - cy,
-          (Number(a2.z) || 0) - cz
-        )
+          const p1 = new THREE.Vector3(
+            (Number(a1.x) || 0) - cx,
+            (Number(a1.y) || 0) - cy,
+            (Number(a1.z) || 0) - cz
+          )
+          const p2 = new THREE.Vector3(
+            (Number(a2.x) || 0) - cx,
+            (Number(a2.y) || 0) - cy,
+            (Number(a2.z) || 0) - cz
+          )
 
-        const dist = p1.distanceTo(p2)
-        const bondRadius = representation === 'wireframe' ? 0.04 : 0.12
-        const bondGeom = new THREE.CylinderGeometry(bondRadius, bondRadius, dist, 12)
-        const bondMat = new THREE.MeshStandardMaterial({
-          color: 0x64748b,
-          roughness: 0.4,
-          metalness: 0.2,
+          const dist = p1.distanceTo(p2)
+          const bondRadius = representation === 'wireframe' ? 0.04 : 0.12
+          const bondGeom = new THREE.CylinderGeometry(bondRadius, bondRadius, dist, 12)
+          const bondMat = new THREE.MeshStandardMaterial({
+            color: 0x64748b,
+            roughness: 0.4,
+            metalness: 0.2,
+          })
+          const bondMesh = new THREE.Mesh(bondGeom, bondMat)
+
+          const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5)
+          bondMesh.position.copy(mid)
+
+          const dir = new THREE.Vector3().subVectors(p2, p1).normalize()
+          const axis = new THREE.Vector3(0, 1, 0)
+          bondMesh.quaternion.setFromUnitVectors(axis, dir)
+
+          molGroup.add(bondMesh)
         })
-        const bondMesh = new THREE.Mesh(bondGeom, bondMat)
-
-        const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5)
-        bondMesh.position.copy(mid)
-
-        const dir = new THREE.Vector3().subVectors(p2, p1).normalize()
-        const axis = new THREE.Vector3(0, 1, 0)
-        bondMesh.quaternion.setFromUnitVectors(axis, dir)
-
-        molGroup.add(bondMesh)
-      })
+      } else if (drug?.entityType === 'ELEMENT') {
+        // Lattice unit cell connectors
+        const edges = [
+          [0,1],[1,3],[3,2],[2,0],
+          [4,5],[5,7],[7,6],[6,4],
+          [0,4],[1,5],[2,6],[3,7],
+          [8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,6],[8,7],
+        ]
+        edges.forEach(([i1, i2]) => {
+          const a1 = processedAtoms[i1]
+          const a2 = processedAtoms[i2]
+          if (!a1 || !a2) return
+          const p1 = new THREE.Vector3((Number(a1.x) || 0) - cx, (Number(a1.y) || 0) - cy, (Number(a1.z) || 0) - cz)
+          const p2 = new THREE.Vector3((Number(a2.x) || 0) - cx, (Number(a2.y) || 0) - cy, (Number(a2.z) || 0) - cz)
+          const dist = p1.distanceTo(p2)
+          const bondGeom = new THREE.CylinderGeometry(0.06, 0.06, dist, 8)
+          const bondMat = new THREE.MeshStandardMaterial({ color: 0x475569, opacity: 0.6, transparent: true })
+          const bondMesh = new THREE.Mesh(bondGeom, bondMat)
+          bondMesh.position.copy(new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5))
+          const dir = new THREE.Vector3().subVectors(p2, p1).normalize()
+          bondMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir)
+          molGroup.add(bondMesh)
+        })
+      }
     }
 
-    // Interaction State
+    // Interaction State & Raycasting
     let isDragging = false
     let prevMouseX = 0
     let prevMouseY = 0
+
+    const raycaster = new THREE.Raycaster()
+    const mouse = new THREE.Vector2()
 
     const onMouseDown = (e) => {
       isDragging = true
@@ -200,6 +233,19 @@ export default function DrugStructureViewer({ drug }) {
     }
 
     const onMouseMove = (e) => {
+      const rect = renderer.domElement.getBoundingClientRect()
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1
+
+      raycaster.setFromCamera(mouse, camera)
+      const intersects = raycaster.intersectObjects(atomMeshes)
+      if (intersects.length > 0) {
+        const target = intersects[0].object.userData
+        setHoveredAtom(target.atom)
+      } else {
+        setHoveredAtom(null)
+      }
+
       if (!isDragging) return
       const deltaX = e.clientX - prevMouseX
       const deltaY = e.clientY - prevMouseY
@@ -213,6 +259,14 @@ export default function DrugStructureViewer({ drug }) {
       isDragging = false
     }
 
+    const onClick = () => {
+      raycaster.setFromCamera(mouse, camera)
+      const intersects = raycaster.intersectObjects(atomMeshes)
+      if (intersects.length > 0) {
+        setSelectedAtom(intersects[0].object.userData.atom)
+      }
+    }
+
     const onWheel = (e) => {
       e.preventDefault()
       camera.position.z = Math.max(5, Math.min(40, camera.position.z + e.deltaY * 0.02))
@@ -222,6 +276,7 @@ export default function DrugStructureViewer({ drug }) {
     dom.addEventListener('mousedown', onMouseDown)
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseup', onMouseUp)
+    dom.addEventListener('click', onClick)
     dom.addEventListener('wheel', onWheel, { passive: false })
 
     // Animation Loop
@@ -269,11 +324,12 @@ export default function DrugStructureViewer({ drug }) {
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)
       dom.removeEventListener('mousedown', onMouseDown)
+      dom.removeEventListener('click', onClick)
       dom.removeEventListener('wheel', onWheel)
       renderer.dispose()
       if (container) container.innerHTML = ''
     }
-  }, [viewMode, representation, processedAtoms, bonds, autoRotate])
+  }, [viewMode, representation, processedAtoms, bonds, autoRotate, highlightedElement, highlightedIndices, drug])
 
   // ==========================================
   // 2D SVG PROJECTION
@@ -350,22 +406,27 @@ export default function DrugStructureViewer({ drug }) {
           const x = toSvgX(atom.x)
           const y = toSvgY(atom.y)
           const elem = (atom.element || 'C').toUpperCase()
-          const color = ELEMENT_COLORS[elem] || '#94a3b8'
+          const color = getElementColor(elem)
           const isCarbon = elem === 'C'
+          const isHighlighted =
+            (highlightedElement && elem === highlightedElement.toUpperCase()) ||
+            (highlightedIndices && highlightedIndices.includes(i))
 
           return (
             <g
               key={`atom-${i}`}
               onClick={() => setSelectedAtom(atom)}
+              onMouseEnter={() => setHoveredAtom(atom)}
+              onMouseLeave={() => setHoveredAtom(null)}
               style={{ cursor: 'pointer' }}
             >
               <circle
                 cx={x}
                 cy={y}
-                r={isCarbon ? 6 : 10}
+                r={isHighlighted ? 12 : isCarbon ? 6 : 10}
                 fill={isCarbon ? '#0f172a' : color}
-                stroke={color}
-                strokeWidth={2}
+                stroke={isHighlighted ? '#10b981' : color}
+                strokeWidth={isHighlighted ? 3 : 2}
               />
               {!isCarbon && (
                 <text
@@ -387,12 +448,16 @@ export default function DrugStructureViewer({ drug }) {
     )
   }
 
+  // Determine hover detail info
+  const activeInspectorAtom = hoveredAtom || selectedAtom
+  const elemData = activeInspectorAtom ? getElement(activeInspectorAtom.element || 'C') : null
+
   return (
     <div className="structure-panel-box">
       <div className="panel-subheading">
         <h3>
           <Layers size={17} color="#10b981" />
-          Molecular Conformation
+          Molecular Conformation & 3D WebGL
         </h3>
         <div className="view-mode-toggle">
           <button
@@ -410,7 +475,7 @@ export default function DrugStructureViewer({ drug }) {
         </div>
       </div>
 
-      <div className="structure-viewport">
+      <div className="structure-viewport" style={{ position: 'relative' }}>
         {viewMode === '3d' ? (
           <>
             <div ref={canvasContainerRef} style={{ width: '100%', height: '100%' }} />
@@ -473,12 +538,57 @@ export default function DrugStructureViewer({ drug }) {
           render2DSVG()
         )}
 
+        {/* Atom Hover Coordinate Inspector Overlay */}
+        {activeInspectorAtom && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '40px',
+              left: '12px',
+              background: 'rgba(15, 23, 42, 0.9)',
+              border: '1px solid rgba(16, 185, 129, 0.4)',
+              borderRadius: '8px',
+              padding: '6px 12px',
+              fontSize: '11px',
+              color: '#f1f5f9',
+              backdropFilter: 'blur(6px)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              zIndex: 20,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+            }}
+          >
+            <span
+              style={{
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                backgroundColor: getElementColor(activeInspectorAtom.element || 'C'),
+                display: 'inline-block',
+              }}
+            />
+            <div>
+              <strong>
+                {elemData ? `${elemData.name} (${elemData.symbol}, Z=${elemData.number})` : activeInspectorAtom.element}
+              </strong>{' '}
+              <span style={{ color: '#94a3b8' }}>
+                · #{activeInspectorAtom.index ?? 0} · Coordinates: (
+                {Number(activeInspectorAtom.x || 0).toFixed(2)},{' '}
+                {Number(activeInspectorAtom.y || 0).toFixed(2)},{' '}
+                {Number(activeInspectorAtom.z || 0).toFixed(2)}) Å
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Viewport Meta Pill */}
         <div className="viewport-info-tag">
           <Info size={13} color="#38bdf8" />
           <span>
-            {processedAtoms.length} Atoms · {bonds.length} Bonds ·{' '}
-            {viewMode === '3d' ? `${representation} mode` : '2D skeletal diagram'}
+            {drug?.entityType === 'ELEMENT'
+              ? `${drug.name} (${drug.symbol || drug.formula}) Unit Cell Crystal Lattice`
+              : `${processedAtoms.length} Atoms · ${bonds.length} Bonds · ${viewMode === '3d' ? `${representation} mode` : '2D skeletal diagram'}`}
           </span>
         </div>
       </div>
