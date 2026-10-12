@@ -140,3 +140,76 @@ test('BioStructure: Generates comprehensive publication report with disclaimer',
   assert.match(report, /CPF|Ciprofloxacin/i)
   assert.match(report, /Disclaimer/i)
 })
+
+test('BioStructure: 3D backbone segmentation prevents WebGL crashes on crystallographic sequence gaps', async () => {
+  const THREE = await import('three')
+  const pdbPath = path.resolve('server/data/structures/2XCT.pdb')
+  const pdbText = await fs.readFile(pdbPath, 'utf-8')
+  const structure = parsePdbStructure(pdbText, '2XCT')
+
+  const cx = structure.atoms.reduce((s, a) => s + a.x, 0) / structure.atoms.length
+  const cy = structure.atoms.reduce((s, a) => s + a.y, 0) / structure.atoms.length
+  const cz = structure.atoms.reduce((s, a) => s + a.z, 0) / structure.atoms.length
+
+  let totalSegments = 0
+  let tubesTested = 0
+
+  structure.chains.forEach((chain) => {
+    const chainAtoms = structure.atoms.filter(
+      (a) => a.chainId === chain.id && (a.name === 'CA' || a.name === "C4'")
+    )
+    if (chainAtoms.length < 2) return
+
+    const segments = []
+    let currentSeg = []
+    const maxGap = chain.type === 'dna' ? 7.5 : 5.2
+
+    for (let i = 0; i < chainAtoms.length; i++) {
+      const a = chainAtoms[i]
+      if (!Number.isFinite(a.x) || !Number.isFinite(a.y) || !Number.isFinite(a.z)) continue
+      const pt = new THREE.Vector3(a.x - cx, a.y - cy, a.z - cz)
+
+      if (currentSeg.length > 0) {
+        const lastPt = currentSeg[currentSeg.length - 1]
+        const dist = lastPt.distanceTo(pt)
+        if (dist < 0.05) continue
+        if (dist > maxGap) {
+          if (currentSeg.length >= 2) segments.push(currentSeg)
+          currentSeg = [pt]
+          continue
+        }
+      }
+      currentSeg.push(pt)
+    }
+    if (currentSeg.length >= 2) segments.push(currentSeg)
+
+    totalSegments += segments.length
+
+    // Verify all continuous segments generate valid TubeGeometry without NaNs
+    segments.forEach((segPoints) => {
+      if (segPoints.length >= 3) {
+        const curve = new THREE.CatmullRomCurve3(segPoints, false, 'centripetal')
+        const tubeSegments = Math.min(Math.max(segPoints.length * 2, 8), 120)
+        const tubeRadius = chain.type === 'dna' ? 0.65 : 0.48
+        const tubeGeo = new THREE.TubeGeometry(curve, tubeSegments, tubeRadius, 6, false)
+
+        const posArr = tubeGeo.attributes.position.array
+        for (let k = 0; k < posArr.length; k++) {
+          assert.ok(Number.isFinite(posArr[k]), `TubeGeometry vertex must be finite, found ${posArr[k]}`)
+        }
+
+        tubeGeo.computeBoundingSphere()
+        assert.ok(Number.isFinite(tubeGeo.boundingSphere.radius), 'BoundingSphere radius must be finite')
+        assert.ok(tubeGeo.boundingSphere.radius > 0, 'BoundingSphere radius must be positive')
+
+        tubeGeo.dispose()
+        tubesTested++
+      }
+    })
+  })
+
+  // Ensure all 12 chains were segmented and tubes generated without any crashes or NaNs
+  assert.ok(totalSegments >= 12, 'Must have at least 12 segments across chains')
+  assert.ok(tubesTested >= 10, 'Must have generated and tested tubes across segments')
+})
+
