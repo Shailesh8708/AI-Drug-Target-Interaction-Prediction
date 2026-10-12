@@ -27,6 +27,8 @@ import {
   calculateSequenceMetrics,
   classifyProteinQuery,
 } from './services/universalProteinService.js'
+import { scientificDataHub } from './services/scientificDataHub.js'
+import { dtiPipelineService } from './services/dtiPipelineService.js'
 
 const app = express()
 const port = process.env.PORT || 4000
@@ -357,6 +359,132 @@ app.post('/api/drugs/predict-dti', async (req, res) => {
     res.json({ prediction })
   } catch (err) {
     res.status(500).json({ error: 'DTI prediction failed', message: err.message })
+  }
+})
+
+// ==========================================
+// SCIENTIFIC DATA INTEGRATION HUB API ENDPOINTS
+// ==========================================
+
+// Integrations live status across all 7 scientific databases
+app.get('/api/integrations/status', async (_req, res) => {
+  try {
+    const status = await scientificDataHub.getIntegrationsStatus()
+    res.json(status)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to retrieve integrations status', message: err.message })
+  }
+})
+
+// Unified multi-database search
+app.get('/api/science/search', async (req, res) => {
+  const q = req.query.q || ''
+  const limit = Number.parseInt(req.query.limit, 10) || 10
+  try {
+    const results = await scientificDataHub.search(q, limit)
+    res.json(results)
+  } catch (err) {
+    res.status(500).json({ error: 'Scientific search failed', message: err.message })
+  }
+})
+
+// Unified compound resolution (PubChem + ChEMBL)
+app.get('/api/science/compound/:identifier', async (req, res) => {
+  const id = req.params.identifier
+  try {
+    const record = await scientificDataHub.resolveCompound(id)
+    if (!record || !record.success) {
+      return res.status(404).json(record || { error: 'Compound not found' })
+    }
+    res.json(record)
+  } catch (err) {
+    res.status(500).json({ error: 'Compound resolution failed', message: err.message })
+  }
+})
+
+// Unified protein & target resolution (UniProt + AlphaFold)
+app.get('/api/science/protein/:identifier', async (req, res) => {
+  const id = req.params.identifier
+  try {
+    const record = await scientificDataHub.resolveProtein(id)
+    if (!record || !record.success) {
+      return res.status(404).json(record || { error: 'Protein target not found' })
+    }
+    res.json(record)
+  } catch (err) {
+    res.status(500).json({ error: 'Protein resolution failed', message: err.message })
+  }
+})
+
+// Unified macromolecular structure resolution (RCSB PDB + AlphaFold)
+app.get('/api/science/structure/:identifier', async (req, res) => {
+  const id = req.params.identifier
+  try {
+    const record = await scientificDataHub.resolveStructure(id)
+    if (!record || !record.success) {
+      return res.status(404).json(record || { error: 'Structure not found' })
+    }
+    res.json(record)
+  } catch (err) {
+    res.status(500).json({ error: 'Structure resolution failed', message: err.message })
+  }
+})
+
+// Quantitative bioactivity records (ChEMBL + BindingDB)
+app.get('/api/science/compound/:identifier/bioactivity', async (req, res) => {
+  const id = req.params.identifier
+  try {
+    const bioactivity = await scientificDataHub.getCompoundBioactivity(id)
+    res.json(bioactivity)
+  } catch (err) {
+    res.status(500).json({ error: 'Bioactivity retrieval failed', message: err.message })
+  }
+})
+
+// Target interacting ligands (ChEMBL + BindingDB)
+app.get('/api/science/target/:identifier/ligands', async (req, res) => {
+  const id = req.params.identifier
+  try {
+    const ligands = await scientificDataHub.getTargetLigands(id)
+    res.json(ligands)
+  } catch (err) {
+    res.status(500).json({ error: 'Target ligands retrieval failed', message: err.message })
+  }
+})
+
+// ==========================================
+// DTI PREDICTION & DATASET PIPELINE ENDPOINTS
+// ==========================================
+
+// Predict Drug-Target Interaction
+app.post('/api/dti/predict', async (req, res) => {
+  const { drug, target, thresholdUm } = req.body || {}
+  try {
+    const prediction = await dtiPipelineService.predict({ drug, target, thresholdUm })
+    res.json(prediction)
+  } catch (err) {
+    res.status(400).json({ error: 'DTI prediction failed', message: err.message })
+  }
+})
+
+// DTI benchmark datasets status
+app.get('/api/datasets/status', (_req, res) => {
+  try {
+    const status = dtiPipelineService.getDatasetStatus()
+    res.json(status)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to retrieve dataset status', message: err.message })
+  }
+})
+
+// DTI benchmark dataset preparation & splitting
+app.post('/api/datasets/prepare', (req, res) => {
+  const { datasetId, splitStrategy, thresholdUm } = req.body || {}
+  try {
+    const result = dtiPipelineService.prepareDataset({ datasetId, splitStrategy, thresholdUm })
+    res.json(result)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to prepare dataset', message: err.message })
   }
 })
 

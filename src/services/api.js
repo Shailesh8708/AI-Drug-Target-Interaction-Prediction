@@ -7,7 +7,17 @@ async function request(path, options = {}) {
   })
 
   if (!response.ok) {
-    throw new Error(`API request failed with status ${response.status}`)
+    let errorBody = null
+    try {
+      errorBody = await response.json()
+    } catch {
+      // not json
+    }
+    const message = errorBody?.message || errorBody?.error || `API request failed with status ${response.status}`
+    const error = new Error(message)
+    error.status = response.status
+    error.body = errorBody
+    throw error
   }
 
   return response.json()
@@ -40,5 +50,59 @@ export function compareCompoundObjects(compoundA, compoundB) {
   return request('/api/compounds/compare', {
     method: 'POST',
     body: JSON.stringify({ compoundA, compoundB }),
+  })
+}
+
+// ==========================================
+// SCIENTIFIC DATA HUB & ADAPTER SERVICES
+// ==========================================
+
+export function getIntegrationsStatus() {
+  return request('/api/integrations/status')
+}
+
+export function searchScientificData(query, limit = 10) {
+  return request(`/api/science/search?q=${encodeURIComponent(query)}&limit=${limit}`)
+}
+
+export function getScientificCompound(identifier) {
+  return request(`/api/science/compound/${encodeURIComponent(identifier)}`)
+}
+
+export function getScientificProtein(identifier) {
+  return request(`/api/science/protein/${encodeURIComponent(identifier)}`)
+}
+
+export function getScientificStructure(identifier) {
+  return request(`/api/science/structure/${encodeURIComponent(identifier)}`)
+}
+
+export function getCompoundBioactivities(identifier) {
+  return request(`/api/science/compound/${encodeURIComponent(identifier)}/bioactivity`)
+}
+
+export function getTargetLigands(identifier) {
+  return request(`/api/science/target/${encodeURIComponent(identifier)}/ligands`)
+}
+
+// ==========================================
+// AI DTI PREDICTION & DATASET PIPELINE SERVICES
+// ==========================================
+
+export function predictDti(drug, target, thresholdUm = 10.0) {
+  return request('/api/dti/predict', {
+    method: 'POST',
+    body: JSON.stringify({ drug, target, thresholdUm }),
+  })
+}
+
+export function getDatasetStatus() {
+  return request('/api/datasets/status')
+}
+
+export function prepareDataset(datasetId = 'bindingdb-core', splitStrategy = 'scaffold', thresholdUm = 10.0) {
+  return request('/api/datasets/prepare', {
+    method: 'POST',
+    body: JSON.stringify({ datasetId, splitStrategy, thresholdUm }),
   })
 }

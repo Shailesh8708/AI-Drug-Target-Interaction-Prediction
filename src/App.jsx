@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Activity, ArrowUpRight, Atom, Bell, Bot, BrainCircuit, CalendarDays, ChevronRight,
-  CircleHelp, Dna, FlaskConical, GitCompare, LayoutDashboard, Menu, Package, Pill, Search, Settings2,
+  CircleHelp, Database, Dna, FlaskConical, GitCompare, LayoutDashboard, Menu, Package, Pill, Search, Settings2,
   ShieldCheck, Sparkles, Target, Wand2, X,
 } from 'lucide-react'
 import MoleculeScene from './components/MoleculeScene'
@@ -19,11 +19,14 @@ import TargetAnalysisView from './components/views/TargetAnalysisView'
 import ExpiryMonitorView from './components/views/ExpiryMonitorView'
 import ResearchHubView from './components/views/ResearchHubView'
 import BioStructureHubView from './components/views/BioStructureHubView'
+import DtiLabView from './components/views/DtiLabView'
+import ScientificIntegrationsView from './components/views/ScientificIntegrationsView'
 
 const navItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'biostructure', label: 'BioStructure Intelligence Hub', icon: Dna, tag: 'New' },
-  { id: 'dti', label: 'DTI Lab', icon: FlaskConical, tag: 'Research' },
+  { id: 'dti', label: 'DTI Lab', icon: FlaskConical, tag: 'AI' },
+  { id: 'integrations', label: 'Scientific Data Hub', icon: Database, tag: '7 DBs' },
   { id: 'molecules', label: 'Molecule Lab', icon: Atom, tag: '3D' },
   { id: 'visualize', label: 'Visualize Compound', icon: Atom, tag: 'Explore' },
   { id: 'compare', label: 'Structure Comparison', icon: GitCompare, tag: 'Compare' },
@@ -103,7 +106,8 @@ function App() {
           {/* Page Routing */}
           {activePage === 'overview' && <Dashboard navigate={navigate} setNotice={setNotice} />}
           {activePage === 'biostructure' && <BioStructureHubView setNotice={setNotice} navigate={navigate} />}
-          {activePage === 'dti' && <DtiLab setNotice={setNotice} />}
+          {activePage === 'dti' && <DtiLabView setNotice={setNotice} navigate={navigate} />}
+          {activePage === 'integrations' && <ScientificIntegrationsView setNotice={setNotice} navigate={navigate} />}
           {activePage === 'molecules' && <MoleculeLabView setNotice={setNotice} />}
           {activePage === 'visualize' && <VisualizeCompoundView setNotice={setNotice} navigate={navigate} />}
           {activePage === 'compare' && <StructureComparisonView setNotice={setNotice} navigate={navigate} />}
@@ -115,7 +119,7 @@ function App() {
           {activePage === 'schedule' && <Schedule setNotice={setNotice} />}
           {activePage === 'assistant' && <Assistant />}
           {activePage === 'analytics' && <Analytics />}
-          {activePage === 'research' && <ResearchHubView setNotice={setNotice} />}
+          {activePage === 'research' && <ResearchHubView setNotice={setNotice} navigate={navigate} />}
         </main>
 
         {/* Persistent 3D AI Agent "Bipasha Mam" */}
@@ -133,7 +137,7 @@ function Dashboard({ navigate, setNotice }) {
   return <div className="page-wrap">
     <PageIntro eyebrow="Tuesday · 22 September 2026" title="Good morning, researcher."><span>Your workspace is ready for the next question.</span><button className="text-action" onClick={() => navigate('biostructure')}>Explore BioStructure Hub <ArrowUpRight size={15} /></button></PageIntro>
     <section className="hero-panel">
-      <div className="hero-copy"><div className="signal-line"><span className="pulse-dot" /> RESEARCH ENVIRONMENT · PHASE 01</div><h2>Where molecular<br /><i>questions become</i> signals.</h2><p>Aegis brings computational biology, protein–ligand intelligence, and everyday medicine management into one clear, research-ready workspace.</p><div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}><button className="primary-button" onClick={() => navigate('biostructure')}><Dna size={16} /> Explore BioStructure Hub <ArrowUpRight size={15} /></button><button className="outline-button" onClick={() => navigate('dti')}><FlaskConical size={16} /> DTI Lab</button><button className="outline-button" onClick={() => navigate('compare')}><GitCompare size={16} /> Compare structures</button></div></div>
+      <div className="hero-copy"><div className="signal-line"><span className="pulse-dot" /> RESEARCH ENVIRONMENT · PHASE 01</div><h2>Where molecular<br /><i>questions become</i> signals.</h2><p>Aegis brings computational biology, protein–ligand intelligence, and everyday medicine management into one clear, research-ready workspace.</p><div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}><button className="primary-button" onClick={() => navigate('biostructure')}><Dna size={16} /> Explore BioStructure Hub <ArrowUpRight size={15} /></button><button className="outline-button" onClick={() => navigate('dti')}><FlaskConical size={16} /> DTI Lab</button><button className="outline-button" onClick={() => navigate('integrations')}><Database size={16} /> Scientific Data Hub</button><button className="outline-button" onClick={() => navigate('compare')}><GitCompare size={16} /> Compare structures</button></div></div>
       <MoleculeScene />
       <div className="hero-foot"><span><span className="mini-dot green" /> BioStructure 3D intelligence</span><span><span className="mini-dot blue" /> Model registry standby</span><span><span className="mini-dot orange" /> 3 safety alerts</span></div>
     </section>
@@ -148,7 +152,6 @@ function Metric({ icon: Icon, label, value, detail, accent }) { return <div clas
 function MedicineRow({ name, detail, expiry, status, tone }) { return <div className="medicine-row"><div className="medicine-icon"><Package size={16} /></div><div className="medicine-info"><strong>{name}</strong><small>{detail}</small></div><div className="medicine-expiry"><small>Expiry</small><strong>{expiry}</strong></div><span className={`status-pill ${tone}`}>{status}</span></div> }
 function ActivityItem({ icon: Icon, title, time, color }) { return <div className="activity-item"><div className={`activity-icon ${color}`}><Icon size={15} /></div><div><strong>{title}</strong><small>{time}</small></div><ChevronRight size={15} /></div> }
 
-function DtiLab({ setNotice }) { return <div className="page-wrap"><PageIntro eyebrow="Computational biology" title="DTI Lab"><span>Compose a study from molecular inputs and a registered model.</span><button className="primary-button small" onClick={() => setNotice('Prediction service is a Phase 3 placeholder until a trained model is registered')}><Sparkles size={15} /> Run analysis</button></PageIntro><section className="lab-grid"><div className="content-panel study-panel"><div className="panel-heading"><div><p className="eyebrow">Study composer</p><h3>Define your interaction question</h3></div><span className="draft-badge">DRAFT</span></div><label>Drug molecule <input placeholder="Paste a SMILES string" /></label><p className="field-help">SMILES validation and RDKit features will connect in Phase 3.</p><label>Biological target <input placeholder="Target identifier or protein sequence" /></label><div className="input-row"><label>Model family <select><option>Choose a registered model</option><option>Logistic Regression</option><option>Random Forest</option></select></label><label>Dataset version <select><option>Not connected</option></select></label></div><button className="outline-button" onClick={() => setNotice('Study saved locally as a draft')}><ShieldCheck size={15} /> Save draft</button></div><div className="content-panel pipeline-panel"><div className="panel-heading"><div><p className="eyebrow">Pipeline status</p><h3>Analysis pathway</h3></div><div className="status-orb"><span /></div></div>{['Molecular structure', 'Feature extraction', 'Target representation', 'Model inference'].map((step, index) => <div className={`pipeline-step ${index === 0 ? 'ready' : ''}`} key={step}><span>{String(index + 1).padStart(2, '0')}</span><strong>{step}</strong><small>{index === 0 ? 'Awaiting input' : 'Not configured'}</small><ChevronRight size={15} /></div>)}<div className="research-note"><CircleHelp size={16} /><span>Predictions will be labeled as computational estimates and never as confirmed biological interactions.</span></div></div></section></div> }
 function Medicines({ setNotice }) {
   return <div className="page-wrap"><PageIntro eyebrow="Personal organization" title="Medicine cabinet"><span>Keep your own inventory visible, current, and easy to review.</span><button className="primary-button small" onClick={() => setNotice('Medicine entry form will be enabled in the inventory phase')}><Package size={15} /> Add medicine</button></PageIntro><section className="content-panel full-panel"><div className="panel-heading"><div><p className="eyebrow">Inventory · 3 records</p><h3>Current supplies</h3></div><div className="filter-chip"><Search size={14} /> Filter inventory</div></div><div className="inventory-table"><div className="table-head"><span>Medicine</span><span>Category</span><span>Quantity</span><span>Expiry</span><span>Status</span></div>{medicineRows.map((row) => <div className="table-row" key={row.name}><div><strong>{row.name}</strong><small>{row.detail}</small></div><span>{row.name === 'Cetirizine' ? 'Allergy' : row.name === 'Paracetamol' ? 'Pain / fever' : 'Wound care'}</span><span>{row.name === 'First-aid antiseptic' ? '100 ml' : '24 tablets'}</span><span>{row.expiry}</span><span className={`status-pill ${row.tone}`}>{row.status}</span></div>)}</div></section><div className="disclaimer"><ShieldCheck size={18} /><p>Inventory details are user-provided. Aegis does not recommend purchasing, taking, stopping, or changing any medicine.</p></div></div>
 }

@@ -1,6 +1,6 @@
 import { BrainCircuit, ExternalLink, ShieldCheck, BookOpen, Database, Sparkles, FileText } from 'lucide-react'
 
-export default function ResearchHubView({ setNotice }) {
+export default function ResearchHubView({ setNotice, navigate }) {
   const references = [
     {
       title: 'RCSB Protein Data Bank (PDB 2XCT)',
@@ -38,12 +38,23 @@ export default function ResearchHubView({ setNotice }) {
             Explore computational biology methodologies, open scientific benchmark datasets, and literature references.
           </p>
         </div>
-        <button
-          className="primary-button small"
-          onClick={() => setNotice('Citation exported in BibTeX format')}
-        >
-          <FileText size={15} /> Export Citations
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {navigate && (
+            <button
+              className="outline-button small"
+              onClick={() => navigate('integrations')}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Database size={15} /> Scientific Data Hub
+            </button>
+          )}
+          <button
+            className="primary-button small"
+            onClick={() => setNotice('Citation exported in BibTeX format')}
+          >
+            <FileText size={15} /> Export Citations
+          </button>
+        </div>
       </div>
 
       <div className="dashboard-grid">
