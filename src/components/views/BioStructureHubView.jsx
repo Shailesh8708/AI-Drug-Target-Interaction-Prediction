@@ -30,10 +30,13 @@ import {
   loadCompleteBioStructure,
   getBioStructurePocket,
   getSimilarMolecules,
+  searchAdvancedBiostructures,
   PRESET_STRUCTURES,
 } from '../../services/bioStructureService.js'
 
 import StructureSearchHeader from '../biostructure/StructureSearchHeader.jsx'
+import StructureSearchResultsPanel from '../biostructure/StructureSearchResultsPanel.jsx'
+import BioStructureErrorBoundary from '../biostructure/BioStructureErrorBoundary.jsx'
 import BioStructure3DViewer from '../biostructure/BioStructure3DViewer.jsx'
 import StructureStoryMode from '../biostructure/StructureStoryMode.jsx'
 import ChainSequenceExplorer from '../biostructure/ChainSequenceExplorer.jsx'
@@ -74,6 +77,11 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState(null)
   const [activeTab, setActiveTab] = useState('overview')
+
+  // Search Results Panel state
+  const [searchResults, setSearchResults] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchType, setSearchType] = useState('general')
 
   // 3D Visualizer controls
   const [representation, setRepresentation] = useState('cartoon')
@@ -141,17 +149,47 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
     }
   }
 
+  // Handle Multi-Tab Advanced Search
+  const handleAdvancedSearch = async ({ query, searchType: sType }) => {
+    setIsLoading(true)
+    setErrorMessage(null)
+    setSearchQuery(query)
+    setSearchType(sType)
+    try {
+      const data = await searchAdvancedBiostructures({ query, searchType: sType })
+      setSearchResults(data)
+      setNotice(`Identified ${data.totalCount || data.results?.length || 0} candidate(s) for "${query}".`)
+      if (data.results?.length === 1 && data.results[0].pdbId) {
+        loadStructureData(data.results[0].pdbId)
+      }
+    } catch (err) {
+      setErrorMessage(`Search error: ${err.message}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Handle Custom Structure File Upload
+  const handleFileUpload = (parsedStructure, fileName) => {
+    setNotice(`Imported custom structure "${fileName}" with coordinates into 3D workspace.`)
+    setStructure(parsedStructure)
+    setSearchResults(null)
+    if (parsedStructure.metadata?.structureId) {
+      setCurrentPdbId(parsedStructure.metadata.structureId)
+    }
+    const primaryLigand = parsedStructure.ligands?.[0]?.id || ''
+    if (primaryLigand) {
+      setSelectedLigandId(primaryLigand)
+    }
+    setErrorMessage(null)
+    setActiveTab('overview')
+  }
+
   // Handle Universal Search
   const handleSearch = (searchedQuery) => {
     const clean = searchedQuery.trim()
     setNotice(`Resolving biostructure & protein profile for "${clean}"...`)
-    loadStructureData(clean)
-  }
-
-  // Bridge to Drug Intelligence module
-  const handleNavigateToDrugIntel = (ligandName) => {
-    setNotice(`Transferring ${ligandName || 'Ligand'} to Drug Intelligence Platform...`)
-    navigate('drug-intel', { search: ligandName })
+    handleAdvancedSearch({ query: clean, searchType: 'general' })
   }
 
   // Handle Story step change
@@ -189,6 +227,8 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
         currentPdbId={currentPdbId}
         currentProtein={universalProtein}
         onSearch={handleSearch}
+        onAdvancedSearch={handleAdvancedSearch}
+        onFileUpload={handleFileUpload}
         isLoading={isLoading}
         presentationMode={presentationMode}
         onTogglePresentation={() => setPresentationMode(!presentationMode)}
@@ -210,6 +250,26 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
             <span><strong>Ligand:</strong> {primaryLigand?.name || primaryLigand?.id || 'None'}</span>
           </div>
         </div>
+      )}
+
+      {/* Structured Search Results Panel */}
+      {searchResults && (
+        <StructureSearchResultsPanel
+          results={searchResults.results || []}
+          searchQuery={searchQuery}
+          searchType={searchType}
+          unmatchedMessage={searchResults.unmatchedMessage}
+          currentPdbId={currentPdbId}
+          onSelectStructure={(pdbId) => {
+            setCurrentPdbId(pdbId)
+            loadStructureData(pdbId)
+            setSearchResults(null)
+          }}
+          onOpenUpload={() => {
+            setNotice('Please select the "Upload Structure" tab in the search header above.')
+          }}
+          onClose={() => setSearchResults(null)}
+        />
       )}
 
       {/* Error Notice */}
@@ -290,26 +350,28 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
           </div>
         </div>
 
-        {/* 3D WebGL Canvas */}
-        <BioStructure3DViewer
-          structure={structure}
-          representation={representation}
-          selectedResidueId={selectedResidueId}
-          selectedLigandId={selectedLigandId}
-          highlightedResidues={highlightedResidues}
-          pocketData={pocketData}
-          showPocket={showPocket}
-          showInteractions={showInteractions}
-          cameraPreset={cameraPreset}
-          onSelectResidue={(resId) => {
-            setSelectedResidueId(String(resId))
-            setNotice(`Inspecting residue ${resId}`)
-          }}
-          onSelectLigand={(ligId) => {
-            setSelectedLigandId(ligId)
-            setNotice(`Focusing bound ligand ${ligId}`)
-          }}
-        />
+        {/* 3D WebGL Canvas wrapped in Error Boundary */}
+        <BioStructureErrorBoundary onReset={() => loadStructureData(currentPdbId)}>
+          <BioStructure3DViewer
+            structure={structure}
+            representation={representation}
+            selectedResidueId={selectedResidueId}
+            selectedLigandId={selectedLigandId}
+            highlightedResidues={highlightedResidues}
+            pocketData={pocketData}
+            showPocket={showPocket}
+            showInteractions={showInteractions}
+            cameraPreset={cameraPreset}
+            onSelectResidue={(resId) => {
+              setSelectedResidueId(String(resId))
+              setNotice(`Inspecting residue ${resId}`)
+            }}
+            onSelectLigand={(ligId) => {
+              setSelectedLigandId(ligId)
+              setNotice(`Focusing bound ligand ${ligId}`)
+            }}
+          />
+        </BioStructureErrorBoundary>
 
         {/* Story Mode Overlay */}
         {storyMode && (
@@ -489,7 +551,6 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
                 setCameraPreset('ligand')
               }}
               onNavigateToComparison={handleNavigateToComparison}
-              onNavigateToDrugIntel={handleNavigateToDrugIntel}
               learnMode={learnMode}
               setNotice={setNotice}
             />

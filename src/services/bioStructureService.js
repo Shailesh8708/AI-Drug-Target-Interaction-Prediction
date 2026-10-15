@@ -270,6 +270,42 @@ export function parsePdbStructure(rawText, pdbId = '2XCT') {
       formulaWeight = 387.51
       smiles = 'CCC(=C(C1=CC=C(C=C1)OCCN(C)C)C2=CC=CC=C2)C3=CC=C(C=C3)O'
       inchiKey = 'PBYNWIZGVOAOFC-UHFFFAOYSA-N'
+    } else if (lig.id === 'CEL') {
+      name = 'Celecoxib'
+      formula = 'C17H14F3N3O2S'
+      formulaWeight = 381.37
+      smiles = 'CC1=CC=C(C=C1)C2=CC(=NN2C3=CC=C(C=C3)S(=O)(=O)N)C(F)(F)F'
+      inchiKey = 'RZEKVGVHFLEQIL-UHFFFAOYSA-N'
+    } else if (lig.id === 'MTX') {
+      name = 'Methotrexate'
+      formula = 'C20H22N8O5'
+      formulaWeight = 454.44
+      smiles = 'CN(CC1=CN=C2C(=N1)C(=NC(=N2)N)N)C3=CC=C(C=C3)C(=O)NC(CCC(=O)O)C(=O)O'
+      inchiKey = 'FBOZXECLQNJBKD-UHFFFAOYSA-N'
+    } else if (lig.id === 'U19' || lig.id === 'NIR') {
+      name = 'Nirmatrelvir'
+      formula = 'C23H32F3N5O4'
+      formulaWeight = 499.53
+      smiles = 'CC1(C2C1C(N2C(=O)C(C(C)(C)C)NC(=O)C(F)(F)F)C(=O)NC(CC3CCNC3=O)C#N)C'
+      inchiKey = 'LIHMDOCIOLLMPA-UHFFFAOYSA-N'
+    } else if (lig.id === 'HEM') {
+      name = 'Protoporphyrin IX with Fe (Heme)'
+      formula = 'C34H32FeN4O4'
+      formulaWeight = 616.49
+      smiles = 'CC1=C(C2=CC3=C(C(=C(N3)C=C4C(=C(C(=N4)C=C5C(=C(C(=N5)C=C1N2)C=C)C)CCC(=O)O)CCC(=O)O)C)C=C)C'
+      inchiKey = 'KABFMIBPWCXCRK-UHFFFAOYSA-N'
+    } else if (lig.id === 'PHN') {
+      name = 'Phenol'
+      formula = 'C6H6O'
+      formulaWeight = 94.11
+      smiles = 'C1=CC=C(C=C1)O'
+      inchiKey = 'ISWSIDIOOBJBQZ-UHFFFAOYSA-N'
+    } else if (lig.id === 'AQ4') {
+      name = 'Erlotinib'
+      formula = 'C22H23N3O4'
+      formulaWeight = 393.44
+      smiles = 'COCCOC1=C(C=C2C(=C1)C(=NC=N2)NC3=CC=CC(=C3)C#C)OCCOC'
+      inchiKey = 'AHSLDDVDOJOGSB-UHFFFAOYSA-N'
     }
 
     ligands.push({
@@ -302,6 +338,405 @@ export function parsePdbStructure(rawText, pdbId = '2XCT') {
     totalAtoms: atoms.length,
     totalResidues: residuesMap.size,
   }
+}
+
+/**
+ * Parses mmCIF formatted text files.
+ */
+export function parseMmCifStructure(rawText, fallbackId = 'UPLOADED') {
+  const lines = rawText.split(/\r?\n/)
+  const cleanId = String(fallbackId || 'UPLOADED').trim().toUpperCase()
+
+  const metadata = {
+    structureId: cleanId,
+    title: 'Macromolecular Structure (mmCIF)',
+    experimentalMethod: 'X-RAY DIFFRACTION',
+    resolution: null,
+    rWork: null,
+    rFree: null,
+    spaceGroup: null,
+    depositionDate: null,
+    releaseDate: null,
+    organism: 'Source unassigned',
+    source: 'mmCIF Structural Data',
+    provenance: 'EXPERIMENTAL',
+    badge: '[USER UPLOADED STRUCTURE]',
+  }
+
+  for (let i = 0; i < Math.min(lines.length, 400); i++) {
+    const l = lines[i].trim()
+    if (l.startsWith('_entry.id')) {
+      const parts = l.split(/\s+/)
+      if (parts[1]) metadata.structureId = parts[1].replace(/['"]/g, '').toUpperCase()
+    } else if (l.startsWith('_struct.title')) {
+      const match = l.match(/_struct\.title\s+['"]?([^'"]+)['"]?/i)
+      if (match) metadata.title = match[1].trim()
+    } else if (l.startsWith('_exptl.method')) {
+      const match = l.match(/_exptl\.method\s+['"]?([^'"]+)['"]?/i)
+      if (match) metadata.experimentalMethod = match[1].trim()
+    } else if (l.startsWith('_refine.ls_d_res_high')) {
+      const parts = l.split(/\s+/)
+      if (parts[1]) {
+        const val = Number.parseFloat(parts[1])
+        if (Number.isFinite(val)) metadata.resolution = val
+      }
+    }
+  }
+
+  let inAtomSiteLoop = false
+  const atomSiteTags = []
+  const atomRows = []
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim()
+    if (!line || line.startsWith('#')) continue
+
+    if (line === 'loop_') {
+      let j = i + 1
+      while (j < lines.length && lines[j].trim().startsWith('#')) j++
+      if (j < lines.length && lines[j].trim().startsWith('_atom_site.')) {
+        inAtomSiteLoop = true
+        atomSiteTags.length = 0
+        i = j - 1
+        continue
+      } else if (inAtomSiteLoop) {
+        break
+      }
+    }
+
+    if (inAtomSiteLoop) {
+      if (line.startsWith('_atom_site.')) {
+        atomSiteTags.push(line.replace('_atom_site.', '').trim())
+      } else if (line.startsWith('_') || line.startsWith('loop_') || line.startsWith('data_')) {
+        break
+      } else {
+        atomRows.push(line)
+      }
+    }
+  }
+
+  if (!atomRows.length) {
+    if (rawText.includes('ATOM  ') || rawText.includes('HETATM')) {
+      return parsePdbStructure(rawText, cleanId)
+    }
+    throw new Error('No _atom_site coordinate records identified in mmCIF file.')
+  }
+
+  const getCol = (names) => {
+    for (const name of names) {
+      const idx = atomSiteTags.indexOf(name)
+      if (idx !== -1) return idx
+    }
+    return -1
+  }
+
+  const colGroup = getCol(['group_PDB'])
+  const colId = getCol(['id'])
+  const colType = getCol(['type_symbol'])
+  const colAtomName = getCol(['auth_atom_id', 'label_atom_id'])
+  const colResName = getCol(['auth_comp_id', 'label_comp_id'])
+  const colChain = getCol(['auth_asym_id', 'label_asym_id'])
+  const colSeqNum = getCol(['auth_seq_id', 'label_seq_id'])
+  const colX = getCol(['Cartn_x'])
+  const colY = getCol(['Cartn_y'])
+  const colZ = getCol(['Cartn_z'])
+  const colOcc = getCol(['occupancy'])
+  const colB = getCol(['B_iso_or_equiv'])
+
+  const atoms = []
+  const chainsMap = new Map()
+  const residuesMap = new Map()
+  const ligandsMap = new Map()
+  const metalsMap = new Map()
+  const nucleicChains = new Set()
+  const proteinChains = new Set()
+
+  for (let r = 0; r < atomRows.length; r++) {
+    const row = atomRows[r]
+    const tokens = row.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g)
+    if (!tokens || tokens.length < atomSiteTags.length) continue
+
+    const record = colGroup >= 0 ? tokens[colGroup].toUpperCase() : (row.startsWith('HETATM') ? 'HETATM' : 'ATOM')
+    if (record !== 'ATOM' && record !== 'HETATM') continue
+
+    const x = colX >= 0 ? Number.parseFloat(tokens[colX]) : NaN
+    const y = colY >= 0 ? Number.parseFloat(tokens[colY]) : NaN
+    const z = colZ >= 0 ? Number.parseFloat(tokens[colZ]) : NaN
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue
+
+    const serial = colId >= 0 ? Number.parseInt(tokens[colId], 10) || r + 1 : r + 1
+    const atomName = (colAtomName >= 0 ? tokens[colAtomName] : 'CA').replace(/['"]/g, '')
+    const resName = (colResName >= 0 ? tokens[colResName] : 'UNK').replace(/['"]/g, '')
+    const chainId = (colChain >= 0 ? tokens[colChain] : 'A').replace(/['"]/g, '')
+    const resNum = colSeqNum >= 0 ? Number.parseInt(tokens[colSeqNum], 10) || 1 : 1
+    const residueId = `${chainId}:${resNum}`
+
+    const occupancy = colOcc >= 0 ? Number.parseFloat(tokens[colOcc]) || 1.0 : 1.0
+    const bFactor = colB >= 0 ? Number.parseFloat(tokens[colB]) || 0.0 : 0.0
+    let element = (colType >= 0 ? tokens[colType] : atomName.replace(/[0-9]/g, '')[0] || 'C').toUpperCase().replace(/['"]/g, '')
+
+    const isWater = WATER_NAMES.has(resName)
+    const isNucleic = NUCLEIC_ACID_RESIDUES.has(resName)
+    const isMetal = METAL_ELEMENTS.has(element) || METAL_ELEMENTS.has(resName)
+    const isStandardAA = Boolean(AMINO_ACID_MAP[resName])
+
+    const atom = {
+      serial,
+      name: atomName,
+      resName,
+      chainId,
+      resNum,
+      residueId,
+      x,
+      y,
+      z,
+      occupancy,
+      bFactor,
+      element,
+      record,
+      isWater,
+      isNucleic,
+      isMetal,
+      isStandardAA,
+    }
+    atoms.push(atom)
+
+    if (!chainsMap.has(chainId)) {
+      chainsMap.set(chainId, {
+        id: chainId,
+        type: isNucleic ? 'dna' : 'protein',
+        description: isNucleic ? 'Nucleic Acid Polymer' : 'Polypeptide Chain',
+        residues: [],
+        atomIndices: [],
+        sequence: '',
+      })
+    }
+    const chain = chainsMap.get(chainId)
+    chain.atomIndices.push(atoms.length - 1)
+    if (isNucleic) nucleicChains.add(chainId)
+    else if (isStandardAA) proteinChains.add(chainId)
+
+    if (!residuesMap.has(residueId)) {
+      const oneLetter = isStandardAA
+        ? AMINO_ACID_MAP[resName]
+        : isNucleic
+        ? resName.slice(-1)
+        : 'X'
+      if (isStandardAA || isNucleic) {
+        chain.sequence += oneLetter
+      }
+
+      residuesMap.set(residueId, {
+        id: residueId,
+        resName,
+        resNum,
+        chainId,
+        oneLetter,
+        isStandardAA,
+        isNucleic,
+        atomIndices: [],
+      })
+      chain.residues.push(residueId)
+    }
+
+    const res = residuesMap.get(residueId)
+    res.atomIndices.push(atoms.length - 1)
+    if (atomName === 'CA' || (isNucleic && atomName === "C4'")) {
+      res.caIndex = atoms.length - 1
+    }
+
+    if (record === 'HETATM' && !isWater && !isMetal && !isStandardAA && !isNucleic) {
+      if (!ligandsMap.has(resName)) {
+        ligandsMap.set(resName, {
+          id: resName,
+          name: resName,
+          chainId,
+          residueId,
+          resNum,
+          atomIndices: [],
+          atoms: [],
+        })
+      }
+      const lig = ligandsMap.get(resName)
+      lig.atomIndices.push(atoms.length - 1)
+      lig.atoms.push(atom)
+    }
+
+    if (isMetal) {
+      const metalKey = `${resName}-${residueId}`
+      if (!metalsMap.has(metalKey)) {
+        metalsMap.set(metalKey, {
+          id: metalKey,
+          element,
+          resName,
+          chainId,
+          resNum,
+          x,
+          y,
+          z,
+          charge: element === 'MN' || element === 'MG' || element === 'ZN' || element === 'CA' ? 2 : 1,
+          atomIndex: atoms.length - 1,
+        })
+      }
+    }
+  }
+
+  chainsMap.forEach((c) => {
+    if (nucleicChains.has(c.id)) {
+      c.type = 'dna'
+      c.description = `DNA / Nucleic Acid Chain (${c.sequence.length} nt)`
+    } else {
+      c.type = 'protein'
+      c.description = `Protein Chain (${c.sequence.length} aa)`
+    }
+  })
+
+  return {
+    metadata,
+    atoms,
+    chains: Array.from(chainsMap.values()),
+    residues: Array.from(residuesMap.values()),
+    ligands: Array.from(ligandsMap.values()).map((l) => ({
+      ...l,
+      name: l.id,
+      atomCount: l.atoms.length,
+    })),
+    metalIons: Array.from(metalsMap.values()),
+    assemblies: [
+      { id: 'asym', name: 'Asymmetric Unit', stoichiometry: 'Deposited Coordinates' },
+    ],
+    totalAtoms: atoms.length,
+    totalResidues: residuesMap.size,
+    provenanceTiers: {
+      structure: '[USER UPLOADED STRUCTURE] Imported via macromolecular file upload',
+      properties: '[CALCULATED INFORMATION] Real-time 3D coordinates & pocket extraction',
+      annotations: '[DATABASE ANNOTATION] User-supplied metadata',
+      interpretation: '[AI INTERPRETATION] Aegis Structural Biology inference',
+    },
+  }
+}
+
+/**
+ * Parses FASTA formatted sequence text.
+ */
+export function parseFastaSequence(rawText) {
+  const lines = rawText.split(/\r?\n/)
+  let header = ''
+  let seq = ''
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+    if (trimmed.startsWith('>')) {
+      if (!header) header = trimmed.slice(1).trim()
+    } else {
+      seq += trimmed.replace(/\s+/g, '')
+    }
+  }
+  return { header: header || 'Custom Protein Sequence', sequence: seq.toUpperCase() }
+}
+
+/**
+ * Detects structural biology file format (.pdb, .cif/.mmcif, .fasta/.fa).
+ */
+export function detectStructureFormat(content, filename = '') {
+  const lowerName = filename.toLowerCase()
+  if (lowerName.endsWith('.cif') || lowerName.endsWith('.mmcif') || lowerName.endsWith('.bcif')) {
+    return 'mmcif'
+  }
+  if (lowerName.endsWith('.fa') || lowerName.endsWith('.fasta')) {
+    return 'fasta'
+  }
+  if (lowerName.endsWith('.pdb') || lowerName.endsWith('.ent')) {
+    return 'pdb'
+  }
+  const first1500 = (content || '').slice(0, 1500)
+  if (first1500.includes('data_') && (first1500.includes('_atom_site') || first1500.includes('_entry.id') || first1500.includes('_struct.'))) {
+    return 'mmcif'
+  }
+  if (first1500.startsWith('>')) {
+    return 'fasta'
+  }
+  const cleanTrimmed = first1500.trim()
+  if (cleanTrimmed && /^[ACDEFGHIKLMNPQRSTVWY\s\n\r]+$/i.test(cleanTrimmed) && !first1500.includes('ATOM') && !first1500.includes('HEADER')) {
+    const compact = cleanTrimmed.replace(/[\s\r\n]/g, '')
+    const words = cleanTrimmed.split(/\s+/)
+    const looksLikeEnglish = words.length > 2 && words.some((w) => w.length < 5)
+    if (compact.length >= 12 && !looksLikeEnglish) {
+      return 'fasta'
+    }
+  }
+  if (first1500.includes('ATOM  ') || first1500.includes('HETATM') || first1500.includes('HEADER ') || first1500.includes('TITLE ')) {
+    return 'pdb'
+  }
+  return 'unsupported'
+}
+
+/**
+ * Universal structure file parser handling PDB, mmCIF, and FASTA uploads.
+ */
+export function parseUploadedStructureFile(fileContent, fileName = 'uploaded_structure.pdb') {
+  const format = detectStructureFormat(fileContent, fileName)
+  if (format === 'pdb') {
+    const baseId = fileName.replace(/\.[^/.]+$/, '').toUpperCase().slice(0, 8) || 'UPLOADED'
+    const structure = parsePdbStructure(fileContent, baseId)
+    structure.metadata.source = 'User Upload (PDB)'
+    structure.metadata.badge = '[USER UPLOADED STRUCTURE]'
+    structure.provenanceTiers = {
+      structure: `[USER UPLOADED STRUCTURE] Imported from ${fileName}`,
+      properties: '[CALCULATED INFORMATION] Real-time 3D coordinates & pocket extraction',
+      annotations: '[DATABASE ANNOTATION] User-supplied metadata',
+      interpretation: '[AI INTERPRETATION] Aegis Structural Biology inference',
+    }
+    return structure
+  }
+  if (format === 'mmcif') {
+    const baseId = fileName.replace(/\.[^/.]+$/, '').toUpperCase().slice(0, 8) || 'UPLOADED'
+    const structure = parseMmCifStructure(fileContent, baseId)
+    structure.metadata.source = 'User Upload (mmCIF)'
+    structure.metadata.badge = '[USER UPLOADED STRUCTURE]'
+    return structure
+  }
+  if (format === 'fasta') {
+    const { header, sequence } = parseFastaSequence(fileContent)
+    const baseId = fileName.replace(/\.[^/.]+$/, '').toUpperCase().slice(0, 8) || 'FASTA_SEQ'
+    return {
+      metadata: {
+        structureId: baseId,
+        title: header || `FASTA Protein Sequence (${sequence.length} aa)`,
+        experimentalMethod: 'IN-SILICO SEQUENCE',
+        resolution: null,
+        organism: 'User-specified sequence',
+        source: 'FASTA File Upload',
+        badge: '[USER UPLOADED STRUCTURE]',
+      },
+      atoms: [],
+      chains: [
+        {
+          id: 'A',
+          type: 'protein',
+          description: header || 'Imported Sequence Chain A',
+          sequence,
+          residues: [],
+          atomIndices: [],
+        },
+      ],
+      residues: [],
+      ligands: [],
+      metalIons: [],
+      assemblies: [],
+      totalAtoms: 0,
+      totalResidues: sequence.length,
+      isSequenceOnly: true,
+      sequence,
+      provenanceTiers: {
+        structure: `[USER UPLOADED STRUCTURE] Imported from FASTA ${fileName}`,
+        properties: '[CALCULATED INFORMATION] Theoretical sequence biophysics',
+        annotations: '[DATABASE ANNOTATION] User sequence',
+        interpretation: '[AI INTERPRETATION] Aegis Structural Biology inference',
+      },
+    }
+  }
+  throw new Error(`Unsupported structure file format for "${fileName}". Supported formats: .pdb, .cif/.mmcif, .fasta/.fa`)
 }
 
 export const PRESET_STRUCTURES = [
@@ -392,6 +827,72 @@ export const PRESET_STRUCTURES = [
     ligand: 'ROC',
     ligandName: 'Saquinavir',
     description: 'Essential retroviral maturation enzyme targeted by peptidomimetic transition-state inhibitors.',
+  },
+  {
+    id: '1HSG',
+    name: 'HIV-1 Protease with Indinavir',
+    subtitle: 'Retroviral aspartyl protease bound to clinical protease inhibitor Indinavir',
+    organism: 'HIV-1',
+    resolution: 2.00,
+    method: 'X-RAY DIFFRACTION',
+    ligand: 'MK1',
+    ligandName: 'Indinavir',
+    description: 'High-resolution catalytic dimer showing flap conformation and active-site aspartate coordination by Indinavir.',
+  },
+  {
+    id: '1OD2',
+    name: 'Estrogen Receptor Alpha with 4-Hydroxytamoxifen',
+    subtitle: 'Nuclear hormone receptor ligand-binding domain bound to active tamoxifen metabolite',
+    organism: 'Homo sapiens (Human)',
+    resolution: 1.90,
+    method: 'X-RAY DIFFRACTION',
+    ligand: 'OHT',
+    ligandName: '4-Hydroxytamoxifen',
+    description: 'Nuclear receptor complex demonstrating selective estrogen receptor modulator (SERM) helix-12 antagonism.',
+  },
+  {
+    id: '1WNL',
+    name: 'Cyclooxygenase-2 (COX-2) with Celecoxib',
+    subtitle: 'Prostaglandin endoperoxide synthase-2 bound to selective coxib inhibitor',
+    organism: 'Mus musculus / Homo sapiens',
+    resolution: 2.40,
+    method: 'X-RAY DIFFRACTION',
+    ligand: 'CEL',
+    ligandName: 'Celecoxib',
+    description: 'Inducible cyclooxygenase homodimer showing deep hydrophobic channel and side pocket selective binding of Celecoxib.',
+  },
+  {
+    id: '7DE4',
+    name: 'SARS-CoV-2 Main Protease (Mpro) with Nirmatrelvir',
+    subtitle: 'Viral 3CL protease dimer bound to Paxlovid oral antiviral inhibitor',
+    organism: 'SARS-CoV-2',
+    resolution: 1.62,
+    method: 'X-RAY DIFFRACTION',
+    ligand: 'U19',
+    ligandName: 'Nirmatrelvir',
+    description: 'Atomic-resolution catalytic dimer showing Cys145 covalent thioimidate adduct and P1 glutamine mimetic lactam ring.',
+  },
+  {
+    id: '1DS7',
+    name: 'Human Dihydrofolate Reductase (DHFR) with Methotrexate',
+    subtitle: 'Folate metabolic enzyme complexed with clinical antifolate and NADPH',
+    organism: 'Homo sapiens (Human)',
+    resolution: 1.90,
+    method: 'X-RAY DIFFRACTION',
+    ligand: 'MTX',
+    ligandName: 'Methotrexate',
+    description: 'Essential purine synthesis enzyme trapped with tight-binding pteridine antifolate Methotrexate and NADPH cofactor.',
+  },
+  {
+    id: '1BNC',
+    name: 'Brain Natriuretic Peptide Complex',
+    subtitle: 'Cardiovascular regulatory hormone complex mediating blood pressure homeostasis',
+    organism: 'Homo sapiens / Rattus norvegicus',
+    resolution: 2.10,
+    method: 'X-RAY DIFFRACTION',
+    ligand: 'BNP',
+    ligandName: 'Natriuretic Peptide',
+    description: 'Cardiovascular natriuretic peptide complex involved in hemodynamic balance and cardiac stress signaling.',
   },
 ]
 
@@ -837,5 +1338,162 @@ export async function loadCompleteBioStructure(queryOrId, ligandId = '', cutoff 
   }
 
   return { structure, pocketData, interpretation, universalProtein }
+}
+
+/**
+ * Client-side fallback search across preset structures and bioactive libraries.
+ */
+export function clientFallbackSearchAdvanced({ query = '', searchType = 'general', method, maxResolution, organism }) {
+  const q = String(query || '').trim().toLowerCase()
+  let results = []
+  let unmatchedMessage = null
+
+  if (searchType === 'chemical_name') {
+    const matchedPresets = PRESET_STRUCTURES.filter(
+      (p) =>
+        p.ligand?.toLowerCase() === q ||
+        p.ligandName?.toLowerCase().includes(q) ||
+        (q.length >= 3 && p.name.toLowerCase().includes(q))
+    )
+    if (matchedPresets.length) {
+      results = matchedPresets
+    } else {
+      unmatchedMessage = `No experimental PDB macromolecular complex containing ligand "${query}" was found in the structural repository. You can upload a docked PDB/mmCIF structure or search by target protein name.`
+    }
+  } else if (searchType === 'iupac_name') {
+    // Check known IUPAC names
+    const iupacMap = {
+      '1-cyclopropyl-6-fluoro-4-oxo-7-piperazin-1-ylquinoline-3-carboxylic acid': '2XCT',
+      '4-[5-(4-methylphenyl)-3-(trifluoromethyl)pyrazol-1-yl]benzenesulfonamide': '1WNL',
+      '4-[(1z)-1-[4-[2-(dimethylamino)ethoxy]phenyl]-2-phenylbut-1-en-1-yl]phenol': '1OD2',
+      '(2s)-2-[[4-[(2,4-diaminopteridin-6-yl)methyl-methylamino]benzoyl]amino]pentanedioic acid': '1DS7',
+      'ferroprotoporphyrin ix': '4HHB',
+      'phenol': '4INS',
+      '2-acetoxybenzoic acid': '1WNL',
+    }
+    const foundId = Object.entries(iupacMap).find(([name]) => q.includes(name) || name.includes(q))?.[1]
+    if (foundId) {
+      results = PRESET_STRUCTURES.filter((p) => p.id === foundId)
+    } else {
+      unmatchedMessage = `No PDB complex identified for IUPAC identifier "${query}". Please verify the IUPAC name or upload custom coordinates.`
+    }
+  } else if (searchType === 'smiles') {
+    // Validate SMILES characters
+    const smilesChars = /^[A-Za-z0-9@+\-\[\]\(\)\\\/=#%.:]+$/
+    if (!smilesChars.test(query.trim())) {
+      unmatchedMessage = `Invalid chemical SMILES format for "${query}". Please check SMILES syntax.`
+    } else {
+      const smilesMap = {
+        'c1cc1n2c=c(c(=o)c3=cc(=c(c=c32)n4ccncc4)f)c(=o)o': '2XCT',
+        'cc1=cc=c(c=c1)c2=cc(=nn2c3=cc=c(c=c3)s(=o)(=o)n)c(f)(f)f': '1WNL',
+        'ccc(=c(c1=cc=c(c=c1)occn(c)c)c2=cc=cc=c2)c3=cc=c(c=c3)o': '1OD2',
+        'c1=cc=c(c=c1)o': '4INS',
+      }
+      const cleanSmiles = query.trim().toLowerCase()
+      const foundId = Object.entries(smilesMap).find(([sm]) => cleanSmiles.includes(sm) || sm.includes(cleanSmiles))?.[1]
+      if (foundId) {
+        results = PRESET_STRUCTURES.filter((p) => p.id === foundId)
+      } else {
+        unmatchedMessage = `Valid chemical SMILES parsed. No experimental macromolecular crystallographic complex containing this ligand exists in the library. You can upload a docked complex file.`
+      }
+    }
+  } else if (searchType === 'pdb_id') {
+    results = PRESET_STRUCTURES.filter((p) => p.id.toLowerCase() === q || p.id.toLowerCase().includes(q))
+    if (!results.length && q.length === 4) {
+      unmatchedMessage = `PDB entry "${query.toUpperCase()}" is not in the offline catalog. You may upload its PDB/mmCIF file to inspect it immediately.`
+    }
+  } else if (searchType === 'uniprot_sequence') {
+    results = PRESET_STRUCTURES.filter(
+      (p) =>
+        p.id.toLowerCase().includes(q) ||
+        p.name.toLowerCase().includes(q) ||
+        p.organism.toLowerCase().includes(q)
+    )
+  } else if (searchType === 'protein_name') {
+    results = PRESET_STRUCTURES.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.subtitle?.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q) ||
+        p.organism.toLowerCase().includes(q)
+    )
+  } else {
+    // General search
+    results = PRESET_STRUCTURES.filter(
+      (p) =>
+        p.id.toLowerCase().includes(q) ||
+        p.name.toLowerCase().includes(q) ||
+        p.organism.toLowerCase().includes(q) ||
+        p.ligandName?.toLowerCase().includes(q) ||
+        p.subtitle?.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q)
+    )
+  }
+
+  // Apply filters
+  let filtered = results.map((p) => ({
+    id: p.id,
+    pdbId: p.id,
+    name: p.name,
+    title: p.subtitle || p.name,
+    organism: p.organism,
+    method: p.method,
+    resolution: p.resolution ? `${p.resolution} Å` : 'N/A',
+    resolutionValue: p.resolution || 99,
+    chainsCount: 2,
+    chains: ['A', 'B'],
+    ligandsCount: 1,
+    ligands: [p.ligandName || p.ligand || 'Ligand'],
+    structureType: 'EXPERIMENTAL',
+    provenance: '[EXPERIMENTAL STRUCTURE]',
+    source: 'wwPDB / RCSB Repository',
+    sourceUrl: `https://www.rcsb.org/structure/${p.id}`,
+    depositionDate: '2020-01-15',
+    releaseDate: '2020-03-20',
+  }))
+
+  if (method && method !== 'all') {
+    filtered = filtered.filter((r) => r.method.toLowerCase().includes(method.toLowerCase()))
+  }
+  if (maxResolution && maxResolution !== 'all') {
+    const maxResNum = Number.parseFloat(maxResolution)
+    if (Number.isFinite(maxResNum)) {
+      filtered = filtered.filter((r) => r.resolutionValue <= maxResNum)
+    }
+  }
+  if (organism && organism !== 'all') {
+    filtered = filtered.filter((r) => r.organism.toLowerCase().includes(organism.toLowerCase()))
+  }
+
+  return {
+    results: filtered,
+    totalCount: filtered.length,
+    searchType,
+    query,
+    unmatchedMessage,
+  }
+}
+
+/**
+ * Advanced multi-tab structural search querying backend with robust fallback.
+ */
+export async function searchAdvancedBiostructures({ query = '', searchType = 'general', method = 'all', maxResolution = 'all', organism = 'all' }) {
+  const params = new URLSearchParams()
+  if (query) params.set('q', query.trim())
+  if (searchType) params.set('type', searchType)
+  if (method && method !== 'all') params.set('method', method)
+  if (maxResolution && maxResolution !== 'all') params.set('maxResolution', String(maxResolution))
+  if (organism && organism !== 'all') params.set('organism', organism)
+
+  try {
+    const data = await request(`/api/structure/search-advanced?${params.toString()}`)
+    if (data && Array.isArray(data.results)) {
+      return data
+    }
+  } catch {
+    // Fallback to client-side search
+  }
+
+  return clientFallbackSearchAdvanced({ query, searchType, method, maxResolution, organism })
 }
 

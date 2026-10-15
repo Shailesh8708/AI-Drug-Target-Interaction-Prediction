@@ -13,8 +13,6 @@ import './components/bipasha/bipasha.css'
 import MoleculeLabView from './components/views/MoleculeLabView'
 import VisualizeCompoundView from './components/views/VisualizeCompoundView'
 import StructureComparisonView from './components/views/StructureComparisonView'
-import MolecularProteinStudioView from './components/views/MolecularProteinStudioView'
-import DrugAnalysisView from './components/views/DrugAnalysisView'
 import TargetAnalysisView from './components/views/TargetAnalysisView'
 import ExpiryMonitorView from './components/views/ExpiryMonitorView'
 import ResearchHubView from './components/views/ResearchHubView'
@@ -30,8 +28,6 @@ const navItems = [
   { id: 'molecules', label: 'Molecule Lab', icon: Atom, tag: '3D' },
   { id: 'visualize', label: 'Visualize Compound', icon: Atom, tag: 'Explore' },
   { id: 'compare', label: 'Structure Comparison', icon: GitCompare, tag: 'Compare' },
-  { id: 'studio', label: 'Molecular Studio', icon: Wand2, tag: 'Build' },
-  { id: 'drugs', label: 'Drug Analysis', icon: Pill },
   { id: 'targets', label: 'Target Analysis', icon: Target },
   { id: 'medicines', label: 'Medicine cabinet', icon: Package },
   { id: 'expiry', label: 'Expiry monitor', icon: Bell, tag: 'Alerts' },
@@ -104,15 +100,15 @@ function App() {
           {notice && <div className="toast" role="status"><ShieldCheck size={17} /><span>{notice}</span><button onClick={() => setNotice(null)} aria-label="Dismiss notification"><X size={14} /></button></div>}
 
           {/* Page Routing */}
-          {activePage === 'overview' && <Dashboard navigate={navigate} setNotice={setNotice} />}
+          {(activePage === 'overview' || !navItems.some((item) => item.id === activePage)) && (
+            <Dashboard navigate={navigate} setNotice={setNotice} />
+          )}
           {activePage === 'biostructure' && <BioStructureHubView setNotice={setNotice} navigate={navigate} />}
           {activePage === 'dti' && <DtiLabView setNotice={setNotice} navigate={navigate} />}
           {activePage === 'integrations' && <ScientificIntegrationsView setNotice={setNotice} navigate={navigate} />}
           {activePage === 'molecules' && <MoleculeLabView setNotice={setNotice} />}
           {activePage === 'visualize' && <VisualizeCompoundView setNotice={setNotice} navigate={navigate} />}
           {activePage === 'compare' && <StructureComparisonView setNotice={setNotice} navigate={navigate} />}
-          {activePage === 'studio' && <MolecularProteinStudioView setNotice={setNotice} navigate={navigate} />}
-          {activePage === 'drugs' && <DrugAnalysisView setNotice={setNotice} navigate={navigate} />}
           {activePage === 'targets' && <TargetAnalysisView setNotice={setNotice} />}
           {activePage === 'medicines' && <Medicines setNotice={setNotice} />}
           {activePage === 'expiry' && <ExpiryMonitorView setNotice={setNotice} />}

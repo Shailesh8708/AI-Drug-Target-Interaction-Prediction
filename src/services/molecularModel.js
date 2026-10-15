@@ -203,7 +203,7 @@ export function moleculeToJson(molecule) {
 export function moleculeToMol(molecule) {
   const atoms = molecule.atoms || []
   const bonds = molecule.bonds || []
-  const lines = [molecule.name || 'Aegis Molecular Studio', '  Aegis editor', '', `${String(atoms.length).padStart(3)}${String(bonds.length).padStart(3)}  0  0  0  0  0  0  0  0999 V2000`]
+  const lines = [molecule.name || 'Aegis Molecule Model', '  Aegis editor', '', `${String(atoms.length).padStart(3)}${String(bonds.length).padStart(3)}  0  0  0  0  0  0  0  0999 V2000`]
   atoms.forEach((atom) => lines.push(`${(atom.x / 40).toFixed(4).padStart(10)}${(-atom.y / 40).toFixed(4).padStart(10)}${'0.0000'.padStart(10)} ${atom.element.padEnd(3)} 0  0  0  0  0  0  0  0  0  0  0  0`))
   const index = new Map(atoms.map((atom, i) => [atom.id, i + 1]))
   bonds.forEach((bond) => lines.push(`${String(index.get(bond.from)).padStart(3)}${String(index.get(bond.to)).padStart(4)}${String(Math.round(bond.order)).padStart(3)}  0  0  0  0`))

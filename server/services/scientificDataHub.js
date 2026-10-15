@@ -29,7 +29,6 @@ import { drugBankAdapter } from './scientificAdapters/drugBankAdapter.js'
 
 import { resolveCompound as resolveLocalCompound } from './compoundResolver.js'
 import { getStructureData as getLocalStructureData } from './bioStructureService.js'
-import { getDrugProfile as getLocalDrugProfile } from './drugIntelligenceService.js'
 import { resolveUniversalProtein as resolveLocalProtein } from './universalProteinService.js'
 
 // In-memory cache with 1 hour TTL

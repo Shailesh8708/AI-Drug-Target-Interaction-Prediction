@@ -94,6 +94,13 @@ export default function BioStructure3DViewer({
   const interactiveDataRef = useRef({ pointsMesh: null, atoms: [] })
   const animFrameIdRef = useRef(null)
 
+  const onSelectResidueRef = useRef(onSelectResidue)
+  const onSelectLigandRef = useRef(onSelectLigand)
+  useEffect(() => {
+    onSelectResidueRef.current = onSelectResidue
+    onSelectLigandRef.current = onSelectLigand
+  }, [onSelectResidue, onSelectLigand])
+
   const [hasWebglError, setHasWebglError] = useState(false)
   const [isContextLost, setIsContextLost] = useState(false)
   const [rebuildTrigger, setRebuildTrigger] = useState(0)
@@ -260,6 +267,7 @@ export default function BioStructure3DViewer({
     // Responsive Canvas Resize
     const handleResize = () => {
       if (!host || !renderer || !camera) return
+      if (host.clientWidth <= 0 || host.clientHeight <= 0) return
       const nw = Math.max(host.clientWidth || 700, 200)
       const nh = Math.max(host.clientHeight || 520, 200)
       renderer.setSize(nw, nh, false)
@@ -365,9 +373,9 @@ export default function BioStructure3DViewer({
         if (hits.length && atoms[hits[0].index]) {
           const a = atoms[hits[0].index]
           if (a.record === 'HETATM' && !a.isWater && !a.isMetal && !a.isNucleic) {
-            onSelectLigand(a.resName)
+            onSelectLigandRef.current?.(a.resName)
           } else if (a.residueId) {
-            onSelectResidue(a.residueId)
+            onSelectResidueRef.current?.(a.residueId)
           }
         }
       } catch (err) {
@@ -423,7 +431,7 @@ export default function BioStructure3DViewer({
       }
       engineRef.current = null
     }
-  }, [rebuildTrigger, onSelectLigand, onSelectResidue])
+  }, [rebuildTrigger])
 
   // --------------------------------------------------------------------------
   // 2. SCENE RECONSTRUCTION (WITHOUT RECREATING RENDERER / CONTEXT)
@@ -545,7 +553,7 @@ export default function BioStructure3DViewer({
               // Verify all vertex coordinates are finite
               const posArr = tubeGeo.attributes.position.array
               let hasNaN = false
-              for (let k = 0; k < Math.min(posArr.length, 60); k++) {
+              for (let k = 0; k < posArr.length; k++) {
                 if (!Number.isFinite(posArr[k])) {
                   hasNaN = true
                   break
@@ -867,7 +875,7 @@ export default function BioStructure3DViewer({
         {structure?.ligands?.length > 0 && (
           <div className="legend-entry">
             <span className="swatch-dot ligand" />
-            <span>Bound Ligand ({structure.ligands[0].name || structure.ligands[0].id})</span>
+            <span>Bound Ligand ({structure.ligands[0]?.name || structure.ligands[0]?.id || 'Ligand'})</span>
           </div>
         )}
         {showPocket && (
@@ -879,7 +887,7 @@ export default function BioStructure3DViewer({
         {structure?.metalIons?.length > 0 && (
           <div className="legend-entry">
             <span className="swatch-dot metal" />
-            <span>Metal Ions ({structure.metalIons.map((m) => m.element).join(', ')})</span>
+            <span>Metal Ions ({structure.metalIons.map((m) => m?.element || m?.id || 'Ion').filter(Boolean).join(', ')})</span>
           </div>
         )}
       </div>

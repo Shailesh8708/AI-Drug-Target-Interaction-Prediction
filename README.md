@@ -6,16 +6,16 @@
 [![Vite](https://img.shields.io/badge/Vite-v6-646CFF?style=flat&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Three.js](https://img.shields.io/badge/Three.js-WebGL_3D-black?style=flat&logo=three.js&logoColor=white)](https://threejs.org/)
 [![Express](https://img.shields.io/badge/Express-v5-000000?style=flat&logo=express&logoColor=white)](https://expressjs.com/)
-[![Tests Passing](https://img.shields.io/badge/Tests-33%2F33_Passing-10b981?style=flat&logo=checkmarx&logoColor=white)](file:///workspaces/AI-Drug-Target-Interaction-Prediction/tests)
+[![Tests Passing](https://img.shields.io/badge/Tests-47%2F47_Passing-10b981?style=flat&logo=checkmarx&logoColor=white)](file:///workspaces/AI-Drug-Target-Interaction-Prediction/tests)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat)](#license)
 
 ---
 
 ## 📌 Executive Summary
 
-The **Aegis Molecular Platform** is an enterprise-grade, research-oriented computational chemistry, molecular biology, and drug discovery intelligence workstation. It bridges high-resolution 3D macromolecular visualization, quantum and empirical descriptor calculation, Maximum Common Substructure (MCS) graph alignment, pharmacokinetic/ADMET profiling, and explainable deep-learning Drug–Target Interaction (DTI) predictions into a unified, dark-laboratory scientific interface.
+The **Aegis Molecular Platform** is an enterprise-grade, research-oriented computational chemistry, molecular biology, and drug discovery intelligence workstation. It bridges high-resolution 3D macromolecular visualization, quantum and empirical descriptor calculation, Maximum Common Substructure (MCS) graph alignment, pharmacokinetic profiling, and explainable deep-learning Drug–Target Interaction (DTI) predictions into a unified, dark-laboratory scientific interface.
 
-Anchoring the workstation is **"Bipasha Mam"**, a persistent 3D AI research assistant and navigation agent positioned at the bottom-right corner of the application. The platform integrates authoritative structural and biochemical repositories—including the **Protein Data Bank (RCSB PDB)**, **PubChem**, and **ChEMBL**—with robust in-browser fallback computation, ensuring high availability both online and offline.
+Anchoring the workstation is **"Bipasha Mam"**, a persistent 3D AI research assistant and navigation agent positioned at the bottom-right corner of the application. The platform integrates authoritative structural and biochemical repositories—including the **Protein Data Bank (RCSB PDB)**, **PubChem**, **ChEMBL**, **UniProt**, and **AlphaFold**—with robust in-browser fallback computation, ensuring high availability both online and offline.
 
 > [!IMPORTANT]
 > **Scientific Research & Non-Clinical Safety Notice:**
@@ -41,16 +41,18 @@ flowchart TB
 
     subgraph Server["Backend Layer (Node.js ESM + Express 5 :4000)"]
         ExpressApp["Express API Boundary"]
-        DrugService["Drug Intelligence Service"]
+        SciDataHub["Scientific Data Hub (7 Adapters)"]
         PDBService["BioStructure PDB Service"]
         CompService["Compound Resolver (PUG REST)"]
         MCSService["MCS & Fingerprint Service"]
+        DTIService["DTI Pipeline Service"]
     end
 
     subgraph External["Curated Knowledge Repositories"]
         PubChem["PubChem PUG REST API"]
         RCSB["RCSB Protein Data Bank"]
         ChEMBL["ChEMBL BioAssay Database"]
+        UniProt["UniProt & AlphaFold DB"]
     end
 
     UI --> ClientService
@@ -59,13 +61,15 @@ flowchart TB
     V2D --> UI
     ClientService -->|"HTTP Request"| ViteProxy
     ViteProxy -->|"Proxy Forward"| ExpressApp
-    ExpressApp --> DrugService
+    ExpressApp --> SciDataHub
     ExpressApp --> PDBService
     ExpressApp --> CompService
     ExpressApp --> MCSService
-    DrugService -.->|"Live Fallback"| PubChem
+    ExpressApp --> DTIService
+    SciDataHub -.->|"Live Fallback"| PubChem
     PDBService -.->|"Coordinate Fetch"| RCSB
-    DrugService -.->|"Bioactivity Mining"| ChEMBL
+    SciDataHub -.->|"Bioactivity Mining"| ChEMBL
+    SciDataHub -.->|"Proteomics"| UniProt
     ClientService -.->|"Offline Fallback Mode"| UI
 ```
 
@@ -83,43 +87,7 @@ flowchart TB
 
 ---
 
-### 2. 💊 Drug Intelligence & Analysis Workstation (`DrugAnalysisView`)
-A comprehensive, multi-dimensional drug intelligence platform inspired by the analytical capabilities of DrugBank, PubChem, and ChEMBL:
-
-* **Universal Multi-Parameter Search:** Instant search across drug names, synonyms, PubChem CIDs, ChEMBL IDs, ATC classifications, targets, and SMILES strings.
-* **Flagship Reference Library:** Embedded flagship records for 10 diverse therapeutic classes:
-  1. **Ciprofloxacin** (Fluoroquinolone Antibacterial)
-  2. **Aspirin** (NSAID / Antiplatelet)
-  3. **Caffeine** (Purinergic Psychostimulant)
-  4. **Ibuprofen** (Propionic Acid Derivative)
-  5. **Paracetamol** (Analgesic & Antipyretic)
-  6. **Imatinib** (Tyrosine Kinase Inhibitor Antineoplastic)
-  7. **Metformin** (Biguanide Antihyperglycemic)
-  8. **Atorvastatin** (HMG-CoA Reductase Inhibitor)
-  9. **Indomethacin** (Indole Acetic Acid NSAID)
-  10. **Tamoxifen** (Selective Estrogen Receptor Modulator)
-* **Dual 2D/3D Structural Inspection:** Clean SVG 2D chemical skeletons paired with an interactive Three.js 3D viewport (Ball & Stick, Spacefill/CPK, Wireframe, Ribbon).
-* **7-Axis Physicochemical Radar:** Real-time polygonal radar plotting Lipophilicity (LogP), Molecular Size (MW), Polarity (TPSA), Solubility (LogS), Flexibility (RotBonds), Charge, and H-Bonding against optimal oral bioavailability envelopes.
-* **Drug-Likeness Rules:** Automated compliance evaluation for Lipinski's Rule of 5 (with violation counts), Veber rules, Ghose filters, and Abbot bioavailability scores.
-* **Bemis–Murcko Scaffolds & Chemotypes:** Automatic deconstruction into Murcko frameworks, identifying core ring systems, linker atoms, and peripheral functional groups.
-* **Bioactivity Intelligence Matrix:** Filterable tables covering experimental assay data (`IC50`, `Ki`, `Kd`, `EC50`, `MIC`), assay descriptions, organism, and source links.
-* **Target Intelligence Cards & 1-Click Bridges:**
-  * `[🔬 Open in BioStructure Hub]`: Instantly transfers target crystal accessions (e.g., PDB `2XCT`) to the 3D structural biology viewer.
-  * `[⚡ Test Affinity in DTI Lab]`: Bridges drug SMILES and target names directly into the in-silico screening pipeline.
-* **AI Drug Intelligence Graph:** Interactive SVG topological network mapping multi-tier relationships: $\text{Drug} \longleftrightarrow \text{Targets} \longleftrightarrow \text{Pathways} \longleftrightarrow \text{Diseases}$.
-* **Pairwise CYP Drug-Drug Interaction (DDI) Engine:** Interactive 2-drug selector computing metabolic cytochrome P450 pathway competition (CYP1A2, CYP2C9, CYP2D6, CYP3A4), interaction severity (Contraindicated, Major, Moderate, Minor), and dietary/food advisories.
-* **ADMET Pharmacokinetics & 6-Step MoA Timeline:** Human Intestinal Absorption (HIA), Caco-2 permeability, Blood-Brain Barrier (BBB) penetration, Plasma Protein Binding (PPB), Volume of Distribution ($V_d$), renal clearance, and half-life alongside a visual 6-stage biological cascade.
-* **Clinical Indications, PGx & Clinical Trials:** Approved and investigational disease mappings, Pharmacogenomics (PGx) biomarkers with PharmGKB evidence levels, and ClinicalTrials.gov NCT identifiers.
-* **Evidence Confidence Hierarchy:** Explicit multi-tier grading distinguishing `[Experimental Ground Truth]`, `[Curated Reference]`, `[Calculated Descriptor]`, and `[In-Silico Prediction]`.
-* **Grounded AI Drug Analyst ("Ask the Drug"):** Context-bounded conversational Q&A grounded strictly in the active drug's pharmacological dossier.
-* **Explainable In-Silico DTI Predictor:** Machine learning affinity estimation ($-\log K_d$, probability) equipped with SHAP/Integrated Gradients feature attribution waterfall diagrams.
-* **Similar Drugs Explorer & SAR Rules:** Topological Morgan fingerprint Tanimoto structural similarity ranking with 1-click bridge to side-by-side Structure Comparison.
-* **Guided Drug Journey Storytelling:** 10-step interactive pedagogical journey tracking a molecule from Target Identification to Clinical Approval.
-* **Research Workspace & Dossier Export:** Local storage persistence for bookmarks and personal research notes, with 1-click export to publication-grade **Markdown (`.md`)** and structured **JSON (`.json`)**.
-
----
-
-### 3. 🧬 BioStructure Intelligence Hub (`BioStructureHubView`)
+### 2. 🧬 BioStructure Intelligence Hub (`BioStructureHubView`)
 An advanced structural biology workspace inspired by RCSB PDB capabilities:
 
 * **3D Macromolecular Complex Rendering:** High-performance WebGL rendering of multi-chain proteins, nucleic acids, bound crystallographic ligands, water molecules, and coordinated metal ions.
@@ -133,7 +101,7 @@ An advanced structural biology workspace inspired by RCSB PDB capabilities:
 
 ---
 
-### 4. 🔬 Structure Comparison & Common Substructure Analysis (`StructureComparisonView`)
+### 3. 🔬 Structure Comparison & Common Substructure Analysis (`StructureComparisonView`)
 A cheminformatics module for pairwise molecular comparison:
 
 * **Dual Compound Input:** Flexible selection of Compound A and Compound B via flagship libraries, SMILES, PubChem name, or chemical formulas.
@@ -146,7 +114,7 @@ A cheminformatics module for pairwise molecular comparison:
 
 ---
 
-### 5. ⚗️ Visualize the Compound (`VisualizeCompoundView`)
+### 4. ⚗️ Visualize the Compound (`VisualizeCompoundView`)
 A dedicated molecular inspection workstation:
 
 * Dynamic compound resolution via PubChem PUG REST API.
@@ -156,20 +124,22 @@ A dedicated molecular inspection workstation:
 
 ---
 
-### 6. 🎨 Aegis Molecular Studio (`MoleculeLabView`)
-An interactive 2D chemical structure editor:
+### 5. 🧪 Molecule Lab (`MoleculeLabView`)
+An interactive molecular exploration and 3D preset viewing workspace:
 
-* Interactive graph canvas allowing custom atom placement, bond creation (single, double, triple), and charge assignment.
-* Chemical template stampers: Benzene, Cyclohexane, Naphthalene, Pyridine, and Steroid cores.
-* Real-time deterministic chemical descriptors: Formula generation, molecular weight, ring counters, and heavy atom counts without fabricated valences.
-* Clean V2000 MOL export preserving graph topology.
+* **3D Preset Molecular Visualization:** Interactive Three.js WebGL canvas displaying preset chemical models and conformers.
+* **Multi-Representation Switching:** Support for Ball & Stick, Spacefill (CPK), Wireframe, and Surface representations.
+* **Deterministic Descriptors:** Molecular weight, atom/bond topology, and elemental composition calculation.
+* **Smooth Interactive Controls:** Orbit, zoom, pan, and auto-rotation tools for educational inspection.
 
 ---
 
-### 7. ⚡ Additional Discovery Modules
+### 6. ⚡ Additional Discovery Modules
 * **DTI Prediction Lab (`DtiLabView`):** Multi-target screening console scoring binding probability and affinity metrics.
 * **Target Analysis Workstation (`TargetAnalysisView`):** Macromolecular target inspector cataloging signaling pathways and cellular locations.
+* **Scientific Data Integration Hub (`ScientificIntegrationsView`):** Live scientific integration console across 7 major databases with provenance badges and latency telemetry.
 * **Medicine Cabinet & Expiry Monitor (`Medicines.jsx` & `ExpiryMonitorView.jsx`):** Clinical sample tracker with a 7-day expiry classification window and storage monitoring.
+* **Research Hub (`ResearchHubView.jsx`):** Evidence synthesis, methodology matrices, and publication literature analysis.
 
 ---
 
@@ -244,21 +214,29 @@ The backend Express server exposes endpoints under `/api`:
 | `GET` | `/api/health` | Returns API status, service name, and execution phase |
 | `GET` | `/api/models` | Returns available machine learning model registry entries |
 
-### 💊 Drug Intelligence & Analysis
+### 🌐 Scientific Data Hub & Integrations
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/drugs/search?q={query}` | Search drug library and live repositories by name, target, or SMILES |
-| `GET` | `/api/drugs/:id` | Retrieve comprehensive pharmacological profile for a specific drug |
-| `POST` | `/api/drugs/ddi` | Evaluate pairwise Drug-Drug Interactions and CYP enzyme competition |
-| `POST` | `/api/drugs/ask` | Natural language Q&A grounded strictly in the drug profile |
-| `POST` | `/api/drugs/predict-dti` | In-silico DTI affinity prediction with explainable feature attributions |
+| `GET` | `/api/integrations/status` | Live status for 7 databases (PubChem, ChEMBL, UniProt, PDB, AlphaFold, DrugBank, BindingDB) |
+| `GET` | `/api/science/search?q={query}` | Cross-database federated query resolution |
+| `GET` | `/api/science/compound/:identifier` | Multi-source normalized compound resolution |
+| `GET` | `/api/science/protein/:identifier` | Unified protein targets with sequence, domains, and PDB IDs |
+| `GET` | `/api/science/compound/:identifier/bioactivity` | Quantitative bioassays (IC50, Ki, Kd) from ChEMBL & BindingDB |
+| `GET` | `/api/science/target/:identifier/ligands` | Known interacting ligands and experimental affinities |
+
+### ⚡ AI Drug–Target Interaction & Machine Learning
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/dti/predict` | Compute Morgan fingerprint + composition vector and predict binding affinity |
+| `GET` | `/api/datasets/status` | Registry status of verified benchmark datasets (BindingDB, Davis, KIBA) |
+| `POST` | `/api/datasets/prepare` | Scaffold splitting, normalization, and dataset preparation |
 
 ### 🧬 Structural Biology & RCSB PDB
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/structure/pdb/:id` | Parse and retrieve 3D macromolecular complex hierarchy for a PDB ID |
-| `POST` | `/api/structure/pocket` | Calculate binding pocket volume, SASA, and contact residues within 4.5Å |
-| `POST` | `/api/structure/similarity` | Calculate Morgan circular fingerprint Tanimoto structural similarity |
+| `GET` | `/api/structure/:id` | Parse and retrieve 3D macromolecular complex hierarchy for a PDB ID |
+| `GET` | `/api/structure/:id/pocket` | Calculate binding pocket volume, SASA, and contact residues within 4.5Å |
+| `GET` | `/api/structure/similar-molecules` | Calculate Morgan circular fingerprint Tanimoto structural similarity |
 | `POST` | `/api/structure/align` | Perform pairwise Cα structural alignment and compute RMSD |
 | `POST` | `/api/structure/ask` | Grounded AI Q&A answering structural biology inquiries about a complex |
 
@@ -359,54 +337,35 @@ npm run build
 │   │   │   ├── StructureComparisonViewer.jsx# Synchronized 2D/3D dual inspectors
 │   │   │   ├── MCSHighlightCanvas.jsx      # Substructure overlay canvas
 │   │   │   └── comparison.css              # Side-by-side comparison styles
-│   │   ├── drugintelligence/               # Drug Intelligence & Analysis workstation
-│   │   │   ├── DrugSearchHeader.jsx        # Universal search & flagship pill selectors
-│   │   │   ├── DrugProfileHeader.jsx       # Identity banner, ATC, approval status
-│   │   │   ├── DrugStructureViewer.jsx     # Dual 2D SVG & 3D Three.js molecular viewer
-│   │   │   ├── ChemicalPropertiesPanel.jsx # Lipinski, Veber, Ghose, bioavailability
-│   │   │   ├── PhysicochemicalRadar.jsx    # 7-axis bioavailability radar chart
-│   │   │   ├── FunctionalGroupScaffoldPanel.jsx # Bemis-Murcko scaffolds & functional groups
-│   │   │   ├── BioactivityIntelligencePanel.jsx # Filterable IC50/Ki/Kd assay matrix
-│   │   │   ├── TargetIntelligencePanel.jsx # Target cards with BioStructure/DTI bridges
-│   │   │   ├── DrugTargetNetworkGraph.jsx  # Interactive SVG Drug-Target-Pathway graph
-│   │   │   ├── DrugInteractionsPanel.jsx   # Pairwise CYP DDI checker & food warnings
-│   │   │   ├── ADMEPharmacologyPanel.jsx   # Pharmacokinetics & 6-step MoA timeline
-│   │   │   ├── DiseasePharmacogenomicsPanel.jsx # Indications, PGx biomarkers, trials
-│   │   │   ├── LiteratureEvidenceMatrix.jsx# Multi-tier evidence confidence matrix
-│   │   │   ├── AIDrugAnalystPanel.jsx      # Grounded "Ask the Drug" conversational Q&A
-│   │   │   ├── ExplainableDTIComparison.jsx# Experimental truth vs ML SHAP attributions
-│   │   │   ├── SimilarDrugsSARPanel.jsx    # Morgan Tanimoto similarity & SAR rules
-│   │   │   ├── DrugJourneyStoryMode.jsx    # 10-step pedagogical drug discovery journey
-│   │   │   ├── ResearchWorkspaceModal.jsx  # Bookmarks & notes with localStorage sync
-│   │   │   ├── DrugReportModal.jsx         # Publication Markdown/JSON export modal
-│   │   │   └── drugintelligence.css        # Dark laboratory workstation CSS
 │   │   ├── views/                          # Page view components
-│   │   │   ├── DrugAnalysisView.jsx        # Master Drug Intelligence workstation
 │   │   │   ├── BioStructureHubView.jsx     # BioStructure Intelligence Hub page
+│   │   │   ├── DtiLabView.jsx              # DTI prediction screening lab
 │   │   │   ├── StructureComparisonView.jsx # Structure Comparison page
 │   │   │   ├── VisualizeCompoundView.jsx   # Compound 2D/3D visualization page
-│   │   │   ├── MoleculeLabView.jsx         # Aegis Molecular Studio editor
-│   │   │   ├── DtiLabView.jsx              # DTI prediction screening lab
+│   │   │   ├── MoleculeLabView.jsx         # 3D molecule preset laboratory
 │   │   │   ├── TargetAnalysisView.jsx      # Biological target analysis page
+│   │   │   ├── ScientificIntegrationsView.jsx # Live scientific data integrations
 │   │   │   ├── Medicines.jsx               # Personal medicine cabinet
 │   │   │   ├── ExpiryMonitorView.jsx       # Medicine expiry tracking
+│   │   │   ├── ResearchHubView.jsx         # Research methodology & publications
 │   │   │   └── AnalyticsView.jsx           # Model metrics & pipeline telemetry
 │   │   └── shared/                         # Reusable navigation, disclaimer & UI cards
 │   └── services/                           # Client-side communication & offline fallbacks
 │       ├── api.js                          # Base API fetch client
 │       ├── bioStructureService.js          # Client PDB loader & pocket calculation
-│       ├── drugIntelligenceService.js      # Client drug intelligence, DDI, and storage
 │       ├── molecularModel.js               # SMILES parser & descriptor math
 │       ├── proteinModel.js                 # Residue & chain models
 │       └── structureComparisonService.js   # Client comparison caller & fallback math
 ├── tests/                                  # Node.js automated test runner suites
-│   ├── bioStructure.test.js                # 6 BioStructure Hub tests
-│   ├── bipashaAgent.test.js                # 5 Bipasha Mam agent tests
-│   ├── drugIntelligence.test.js           # 7 Drug Intelligence tests
-│   ├── expiry.test.js                      # 1 Expiry domain test
-│   ├── moleculeLab.test.js                 # 5 Molecular Studio tests
-│   ├── proteinParsing.test.js              # 3 PDB structure tests
-│   └── structureComparison.test.js         # 6 MCS & comparison tests
+│   ├── bioStructure.test.js                # BioStructure Hub & pocket tests
+│   ├── bipasha.test.js                     # Bipasha Mam agent & navigation tests
+│   ├── dtiPipeline.test.js                 # DTI ML pipeline & fingerprint tests
+│   ├── expiry.test.js                      # Expiry classification domain test
+│   ├── molecularModel.test.js              # Molecular graph & descriptor tests
+│   ├── proteinModel.test.js                # Protein parsing & residue tests
+│   ├── scientificDataHub.test.js           # Multi-database adapter tests
+│   ├── structureComparison.test.js         # MCS & comparison tests
+│   └── universalProtein.test.js            # Universal protein engine tests
 ├── package.json                            # Scripts, dependencies, and configuration
 ├── vite.config.js                          # Vite bundler & reverse proxy configuration
 └── README.md                               # Comprehensive documentation

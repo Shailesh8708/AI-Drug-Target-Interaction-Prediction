@@ -8,15 +8,13 @@ import {
   getContextualGreeting,
 } from '../src/components/bipasha/BipashaActionRegistry.js'
 
-test('Action Registry contains all 10 required project modules', () => {
+test('Action Registry contains all 12 required project modules', () => {
   const expectedModules = [
     'biostructure',
     'dti',
     'molecules',
     'visualize',
     'compare',
-    'studio',
-    'drugs',
     'targets',
     'medicines',
     'expiry',
@@ -26,7 +24,7 @@ test('Action Registry contains all 10 required project modules', () => {
     'research',
   ]
 
-  assert.equal(BIPASHA_ACTIONS.length, 14)
+  assert.equal(BIPASHA_ACTIONS.length, 12)
 
   expectedModules.forEach((modId) => {
     const action = getActionById(modId)
@@ -84,10 +82,6 @@ test('Intent parser accurately maps natural language requests to actions', () =>
   const compareIntent = parseAgentIntent('Compare benzene and toluene')
   assert.equal(compareIntent.type, 'navigate')
   assert.equal(compareIntent.targetAction, 'compare')
-
-  const studioIntent = parseAgentIntent('Open Molecular Studio')
-  assert.equal(studioIntent.type, 'navigate')
-  assert.equal(studioIntent.targetAction, 'studio')
 
   const anaIntent = parseAgentIntent('Take me to analytics')
   assert.equal(anaIntent.type, 'navigate')

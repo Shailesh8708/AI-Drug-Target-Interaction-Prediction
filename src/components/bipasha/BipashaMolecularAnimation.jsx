@@ -9,7 +9,6 @@ import { useId } from 'react'
  * - Medicine Kit: Capsule particles -> Medical inventory grid -> Medicine dashboard
  * - Analytics: Data particles -> Charts form -> Dashboard loads
  * - AI Assistant: Neural network nodes -> Connections activate -> AI interface opens
- * - Drug Analysis: Chemotype scan -> ADMET radar -> Compound profile
  * - Target Analysis: Target sequence -> Binding pocket radar -> 3D pocket topology
  * - Expiry Monitor: Chronological radar scan -> Alert thresholds -> Safety watchlist
  * - Schedule: Circadian wave -> Reminder points -> Timetable
@@ -24,8 +23,6 @@ export default function BipashaMolecularAnimation({ animationType, progress }) {
       return <DtiAnimation progress={progress} gradientPrefix={gradientPrefix} />
     case 'molecules':
       return <MoleculesAnimation progress={progress} gradientPrefix={gradientPrefix} />
-    case 'drugs':
-      return <DrugsAnimation progress={progress} gradientPrefix={gradientPrefix} />
     case 'targets':
       return <TargetsAnimation progress={progress} gradientPrefix={gradientPrefix} />
     case 'medicines':
@@ -236,60 +233,6 @@ function MoleculesAnimation({ progress, gradientPrefix }) {
             <text x="257" y="34" fill="#34d399" fontSize="9" fontFamily="monospace" textAnchor="middle">LogP: 1.31</text>
           </g>
         )}
-      </svg>
-    </div>
-  )
-}
-
-/* 3. Drug Analysis Animation: Chemotype Scan -> ADMET Radar -> Bioactivity */
-function DrugsAnimation({ progress, gradientPrefix }) {
-  const scanY = 30 + ((progress * 1.2) % 120)
-
-  return (
-    <div className="domain-anim drugs-anim">
-      <svg viewBox="0 0 320 180" className="domain-svg" aria-hidden="true">
-        {/* Hexagonal ADMET Radar Spider Chart */}
-        <g transform="translate(160, 90)">
-          {/* Radar background webs */}
-          {[60, 45, 30, 15].map((r, i) => (
-            <polygon
-              key={i}
-              points={Array.from({ length: 6 }, (_, idx) => {
-                const a = (idx * 60 * Math.PI) / 180
-                return `${r * Math.cos(a)},${r * Math.sin(a)}`
-              }).join(' ')}
-              fill="none"
-              stroke="rgba(52, 211, 153, 0.18)"
-              strokeWidth="1"
-            />
-          ))}
-
-          {/* Dynamic ADMET Polygon */}
-          <polygon
-            points={`
-              ${(35 + (progress % 15)) * Math.cos(0)},${(35 + (progress % 15)) * Math.sin(0)}
-              ${48 * Math.cos(Math.PI / 3)},${48 * Math.sin(Math.PI / 3)}
-              ${42 * Math.cos((2 * Math.PI) / 3)},${42 * Math.sin((2 * Math.PI) / 3)}
-              ${(52 - (progress % 10)) * Math.cos(Math.PI)},${(52 - (progress % 10)) * Math.sin(Math.PI)}
-              ${38 * Math.cos((4 * Math.PI) / 3)},${38 * Math.sin((4 * Math.PI) / 3)}
-              ${50 * Math.cos((5 * Math.PI) / 3)},${50 * Math.sin((5 * Math.PI) / 3)}
-            `}
-            fill="rgba(16, 185, 129, 0.25)"
-            stroke="#10b981"
-            strokeWidth="2"
-          />
-
-          {/* Axis Labels */}
-          <text x="68" y="4" fill="#94a3b8" fontSize="8" fontFamily="monospace">SOLUBILITY</text>
-          <text x="24" y="60" fill="#94a3b8" fontSize="8" fontFamily="monospace">BBB PERM</text>
-          <text x="-70" y="60" fill="#94a3b8" fontSize="8" fontFamily="monospace">CYP INHIB</text>
-          <text x="-95" y="4" fill="#94a3b8" fontSize="8" fontFamily="monospace">hERG</text>
-          <text x="-75" y="-50" fill="#94a3b8" fontSize="8" fontFamily="monospace">ABSORPTION</text>
-          <text x="25" y="-50" fill="#94a3b8" fontSize="8" fontFamily="monospace">CLEARANCE</text>
-        </g>
-
-        {/* Laser Scanning Beam */}
-        <line x1="30" y1={scanY} x2="290" y2={scanY} stroke="#34d399" strokeWidth="1.5" opacity="0.75" />
       </svg>
     </div>
   )

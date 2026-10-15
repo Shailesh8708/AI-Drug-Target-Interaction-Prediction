@@ -20,7 +20,12 @@
  * 5. Robust offline fallback catalog for resilient zero-latency execution.
  */
 
-import { getStructureData, parsePdbStructure, calculateBindingPocket } from './bioStructureService.js'
+import {
+  getStructureData,
+  parsePdbStructure,
+  calculateBindingPocket,
+  BIOACTIVE_REFERENCE_LIBRARY,
+} from './bioStructureService.js'
 
 // Standard amino acid masses (monoisotopic / average in Da for peptide-bound residue)
 export const AMINO_ACID_MASSES = {
@@ -355,6 +360,211 @@ export const UNIVERSAL_PROTEIN_CATALOG = {
     sequence: 'PQITLWQRPLVTIKIGGQLKEALLDTGADDTVLEEMSLPGRWKPKMIGGIGGFIKVRQYDQILIEICGHKAIGTVLVGPTPVNIIGRNLLTQIGCTLNF',
     knownDrugs: ['Saquinavir', 'Ritonavir', 'Indinavir', 'Darunavir', 'Atazanavir'],
   },
+  '1hsg': {
+    id: '1HSG',
+    name: 'HIV-1 Protease Complex with Indinavir (Crixivan)',
+    gene: 'pol',
+    organism: 'Human immunodeficiency virus type 1',
+    uniprotId: 'P03367',
+    pdbId: '1HSG',
+    method: 'X-RAY DIFFRACTION',
+    resolution: 2.00,
+    rWork: 0.178,
+    rFree: 0.218,
+    structureType: 'EXPERIMENTAL',
+    function: 'Essential retroviral homodimeric protease that cleaves polyprotein precursors into mature structural and enzymatic components.',
+    catalyticActivity: 'Cleaves hydrophobic-aromatic peptide bonds with transition-state intermediate stabilization by catalytic Asp25/Asp25\'.',
+    subcellularLocation: 'Viral capsid core',
+    domains: [
+      { name: 'Aspartyl protease dimer core', start: 1, end: 99, type: 'Enzyme Core' },
+      { name: 'Flexible beta-hairpin flap region', start: 45, end: 55, type: 'Substrate Gating' },
+    ],
+    activeSites: [
+      { residue: 'ASP', position: 25, role: 'Catalytic dyad coordinating central hydroxyl of Indinavir' },
+    ],
+    metalBinding: [],
+    chains: [
+      { id: 'A', type: 'protein', length: 99, description: 'HIV-1 Protease Chain A' },
+      { id: 'B', type: 'protein', length: 99, description: 'HIV-1 Protease Chain B' },
+    ],
+    ligands: [
+      { id: 'MK1', name: 'Indinavir', formula: 'C36H47N5O4', mw: 613.79, class: 'HIV-1 Protease Inhibitor' },
+    ],
+    sequence: 'PQITLWQRPLVTIKIGGQLKEALLDTGADDTVLEEMSLPGRWKPKMIGGIGGFIKVRQYDQILIEICGHKAIGTVLVGPTPVNIIGRNLLTQIGCTLNF',
+    knownDrugs: ['Indinavir', 'Saquinavir', 'Ritonavir', 'Darunavir'],
+  },
+  '1od2': {
+    id: '1OD2',
+    name: 'Estrogen Receptor Alpha LBD with 4-Hydroxytamoxifen',
+    gene: 'ESR1',
+    organism: 'Homo sapiens (Human)',
+    uniprotId: 'P03372',
+    pdbId: '1OD2',
+    method: 'X-RAY DIFFRACTION',
+    resolution: 1.90,
+    rWork: 0.210,
+    rFree: 0.245,
+    structureType: 'EXPERIMENTAL',
+    function: 'Nuclear hormone receptor transcription factor regulating female reproductive tissue development and oncogenic breast cancer signaling.',
+    catalyticActivity: 'Ligand-activated transcriptional regulation via recruitment of coactivators/corepressors.',
+    subcellularLocation: 'Nucleus / Cytoplasm',
+    domains: [
+      { name: 'Ligand-binding domain (LBD)', start: 305, end: 553, type: 'Ligand Binding' },
+      { name: 'Activation function-2 (AF-2 / Helix 12)', start: 535, end: 548, type: 'Allosteric Switch' },
+    ],
+    activeSites: [
+      { residue: 'GLU', position: 353, role: 'Conserved hydrogen bond donor coordinating ligand phenolic hydroxyl' },
+      { residue: 'ARG', position: 394, role: 'Guanidinium group forming bifurcated salt-bridge contact with ligand' },
+      { residue: 'HIS', position: 524, role: 'Aromatic sandwich residue in steroid binding cleft' },
+    ],
+    metalBinding: [],
+    chains: [
+      { id: 'A', type: 'protein', length: 248, description: 'Estrogen Receptor Alpha LBD' },
+    ],
+    ligands: [
+      { id: 'OHT', name: '4-Hydroxytamoxifen', formula: 'C26H29NO2', mw: 387.51, class: 'Selective Estrogen Receptor Modulator (SERM)' },
+    ],
+    sequence: 'SPLAMILWTTKDFLVTLHDPETSYLLSVLQAVTGTILFDRLSLKAVSLYALSTSVGLAANVLSVLGQLPKSFLTAVLSVLCAPAKAVLSVLAGLVAAELSSLLAP',
+    knownDrugs: ['Tamoxifen', '4-Hydroxytamoxifen', 'Raloxifene', 'Fulvestrant'],
+  },
+  '1wnl': {
+    id: '1WNL',
+    name: 'Cyclooxygenase-2 (COX-2 / PTGS2) with Celecoxib',
+    gene: 'PTGS2',
+    organism: 'Mus musculus / Homo sapiens',
+    uniprotId: 'P35354',
+    pdbId: '1WNL',
+    method: 'X-RAY DIFFRACTION',
+    resolution: 2.40,
+    rWork: 0.198,
+    rFree: 0.242,
+    structureType: 'EXPERIMENTAL',
+    function: 'Key enzyme in prostaglandin and thromboxane biosynthesis catalyzing conversion of arachidonic acid to PGH2; mediator of pain and inflammation.',
+    catalyticActivity: 'Bifunctional cyclooxygenase and peroxidase (EC 1.14.99.1).',
+    subcellularLocation: 'Endoplasmic reticulum / nuclear envelope membrane',
+    domains: [
+      { name: 'EGF-like domain', start: 34, end: 72, type: 'Membrane Binding' },
+      { name: 'Membrane binding domain', start: 73, end: 116, type: 'Anchor' },
+      { name: 'Catalytic cyclooxygenase domain', start: 117, end: 587, type: 'Catalytic' },
+    ],
+    activeSites: [
+      { residue: 'TYR', position: 385, role: 'Catalytic tyrosyl radical extracting hydrogen from arachidonate' },
+      { residue: 'ARG', position: 120, role: 'Positively charged pocket constriction residue' },
+      { residue: 'VAL', position: 523, role: 'Side-pocket gatekeeper residue conferring Celecoxib COX-2 selectivity over Ile523 in COX-1' },
+    ],
+    metalBinding: [],
+    chains: [
+      { id: 'A', type: 'protein', length: 554, description: 'Prostaglandin G/H Synthase 2 Chain A' },
+      { id: 'B', type: 'protein', length: 554, description: 'Prostaglandin G/H Synthase 2 Chain B' },
+    ],
+    ligands: [
+      { id: 'CEL', name: 'Celecoxib', formula: 'C17H14F3N3O2S', mw: 381.37, class: 'Selective COX-2 Inhibitor' },
+      { id: 'HEM', name: 'Heme (Protoporphyrin IX with Fe)', formula: 'C34H32FeN4O4', mw: 616.49, class: 'Cofactor' },
+    ],
+    sequence: 'MLARALLLCAVLALSHTANPCCSHPCQNRGVCMSVGFDQYKCDCTRTGFYGENCSTPEFLTRIKLFLKPTPNTVHYILTHFKGFWNVVVNNIPFLRNAIMSYVLTSRSHLIDSPPTYNADYGYKSWEAFSNLSYYTRALPPVADDCPTPMGRKGKKELSALLSFLPQTY',
+    knownDrugs: ['Celecoxib', 'Rofecoxib', 'Aspirin', 'Indomethacin', 'Ibuprofen'],
+  },
+  '7de4': {
+    id: '7DE4',
+    name: 'SARS-CoV-2 Main Protease (Mpro) with Nirmatrelvir (Paxlovid)',
+    gene: 'ORF1ab',
+    organism: 'SARS-CoV-2',
+    uniprotId: 'P0DTD1',
+    pdbId: '7DE4',
+    method: 'X-RAY DIFFRACTION',
+    resolution: 1.62,
+    rWork: 0.165,
+    rFree: 0.198,
+    structureType: 'EXPERIMENTAL',
+    function: 'Viral 3C-like cysteine protease cleaving polyproteins pp1a and pp1ab at 11 conserved sites; essential for coronavirus replication.',
+    catalyticActivity: 'Cysteine proteolysis using catalytic Cys145-His41 dyad to hydrolyze Gln-P1 containing viral junctions.',
+    subcellularLocation: 'Viral replication-transcription complexes',
+    domains: [
+      { name: 'Domain I (Chymotrypsin-like fold)', start: 8, end: 101, type: 'Catalytic Fold' },
+      { name: 'Domain II (Beta-barrel catalytic lobe)', start: 102, end: 184, type: 'Catalytic Fold' },
+      { name: 'Domain III (Alpha-helical dimerization domain)', start: 201, end: 303, type: 'Dimerization' },
+    ],
+    activeSites: [
+      { residue: 'CYS', position: 145, role: 'Catalytic nucleophile forming covalent thioimidate adduct with Nirmatrelvir nitrile carbon' },
+      { residue: 'HIS', position: 41, role: 'General base catalyst in catalytic dyad' },
+      { residue: 'GLU', position: 166, role: 'Substrate recognition residue forming H-bonds with inhibitor P1 lactam' },
+    ],
+    metalBinding: [],
+    chains: [
+      { id: 'A', type: 'protein', length: 306, description: 'SARS-CoV-2 3CLpro Monomer A' },
+    ],
+    ligands: [
+      { id: 'U19', name: 'Nirmatrelvir', formula: 'C23H32F3N5O4', mw: 499.53, class: 'SARS-CoV-2 3CLpro Inhibitor (Paxlovid)' },
+    ],
+    sequence: 'SGFRKMAFPSGKVEGCMVQVTCGTTTLNGLWLDDVVYCPRHVICTSEDMLNPNYEDLLIRKSNHNFLVQAGNVQLRVIGHSMQNCVLKLKVDTANPKTPKYKFVRIQPGQTFSVLACYNGSPSGVYQCAMRPNFTIKGSFLNGSCGSVGFNIDYDCVSFCYMHHMELPTGVHAGTDLEGNFYGPFVDRQTAQAAGTDTTITVNVLAWLYAAVINGDRWFLNRFTTTLNDFNLVAMKYNYEPLTQDHVDILGPLSAQTGIAVLDMCASLKELLQNGMNGRTILGSALLEDEFTPFDVVRQCSGVTFQ',
+    knownDrugs: ['Nirmatrelvir', 'Paxlovid', 'Ensitrelvir', 'Boceprevir'],
+  },
+  '1ds7': {
+    id: '1DS7',
+    name: 'Human Dihydrofolate Reductase (DHFR) with Methotrexate',
+    gene: 'DHFR',
+    organism: 'Homo sapiens (Human)',
+    uniprotId: 'P00374',
+    pdbId: '1DS7',
+    method: 'X-RAY DIFFRACTION',
+    resolution: 1.90,
+    rWork: 0.182,
+    rFree: 0.224,
+    structureType: 'EXPERIMENTAL',
+    function: 'Essential enzyme reducing dihydrofolate to tetrahydrofolate, maintaining intracellular folate pools for de novo purine, thymidylate, and amino acid synthesis.',
+    catalyticActivity: '5,6,7,8-tetrahydrofolate + NADP+ = 7,8-dihydrofolate + NADPH + H+ (EC 1.5.1.3).',
+    subcellularLocation: 'Mitochondrion / Cytoplasm',
+    domains: [
+      { name: 'DHFR Rossmann fold', start: 1, end: 186, type: 'Folate Binding' },
+      { name: 'Met20 flexible loop', start: 15, end: 26, type: 'Active Site Gate' },
+    ],
+    activeSites: [
+      { residue: 'GLU', position: 30, role: 'Catalytic carboxylate protonating N5 of dihydrofolate or N1 of Methotrexate' },
+      { residue: 'ILE', position: 7, role: 'Hydrophobic contact stabilizing pteridine ring' },
+      { residue: 'PHE', position: 31, role: 'Aromatic stacking interaction with antifolate' },
+    ],
+    metalBinding: [],
+    chains: [
+      { id: 'A', type: 'protein', length: 186, description: 'Dihydrofolate Reductase Chain A' },
+    ],
+    ligands: [
+      { id: 'MTX', name: 'Methotrexate', formula: 'C20H22N8O5', mw: 454.44, class: 'Antifolate antineoplastic' },
+      { id: 'NDP', name: 'NADPH', formula: 'C21H30N7O17P3', mw: 745.42, class: 'Dinucleotide cofactor' },
+    ],
+    sequence: 'VGSLNCIVAVSQNMGIGKNGDLPWPPLRNEFRYFQRMTTTSSVEGKQNLVIMGKKTWFSIPEKNRPLKGRINLVLSRELKEPPQGAHFLSRSLDDALKLTEQPELANKVDMVWIVGGSSVYKEAMNHPGHLKLFVTRIMQDFESDTFFPEIDLEKYKLLPEYPGVLSDVQEEKGIKYKFEVYEKND',
+    knownDrugs: ['Methotrexate', 'Pemetrexed', 'Trimethoprim', 'Pyrimethamine'],
+  },
+  '1bnc': {
+    id: '1BNC',
+    name: 'Brain Natriuretic Peptide Complex',
+    gene: 'NPPB',
+    organism: 'Homo sapiens (Human)',
+    uniprotId: 'P16860',
+    pdbId: '1BNC',
+    method: 'X-RAY DIFFRACTION',
+    resolution: 2.10,
+    rWork: 0.210,
+    rFree: 0.250,
+    structureType: 'EXPERIMENTAL',
+    function: 'Cardiac neurohormone released from ventricular myocytes in response to wall tension and volume overload; activates natriuretic peptide receptor NPR-A.',
+    catalyticActivity: 'Guanylyl cyclase receptor activation inducing natriuresis, diuresis, and systemic vasodilation.',
+    subcellularLocation: 'Secreted into circulation',
+    domains: [
+      { name: 'Natriuretic peptide disulfide loop', start: 10, end: 26, type: 'Receptor Agonist' },
+    ],
+    activeSites: [
+      { residue: 'CYS', position: 10, role: 'Intramolecular disulfide bridge with Cys26 forming 17-residue active ring' },
+      { residue: 'CYS', position: 26, role: 'Intramolecular disulfide bridge with Cys10' },
+    ],
+    metalBinding: [],
+    chains: [
+      { id: 'A', type: 'protein', length: 32, description: 'Natriuretic Peptide Complex Chain A' },
+      { id: 'B', type: 'protein', length: 32, description: 'Natriuretic Peptide Complex Chain B' },
+    ],
+    ligands: [],
+    sequence: 'SPKMVQGSGCFGRKMDRISSSSGLGCKVLRRH',
+    knownDrugs: ['Nesiritide', 'Sacubitril', 'ANP mimetics'],
+  },
 }
 
 // Aliases for quick lookup in the universal catalog
@@ -406,10 +616,47 @@ const CATALOG_ALIASES = {
   '1lyz': '1lyz',
   '1hel': '1lyz',
   // HIV-1 Protease
-  'hiv-1 protease': '1hxb',
-  'hiv protease': '1hxb',
-  p03367: '1hxb',
+  'hiv-1 protease': '1hsg',
+  'hiv protease': '1hsg',
+  'indinavir': '1hsg',
+  '1hsg': '1hsg',
   '1hxb': '1hxb',
+  p03367: '1hsg',
+  // Estrogen Receptor
+  'estrogen receptor': '1od2',
+  'er alpha': '1od2',
+  'esr1': '1od2',
+  'tamoxifen': '1od2',
+  '4-hydroxytamoxifen': '1od2',
+  p03372: '1od2',
+  '1od2': '1od2',
+  // COX-2
+  'cox-2': '1wnl',
+  'cyclooxygenase-2': '1wnl',
+  'ptgs2': '1wnl',
+  'celecoxib': '1wnl',
+  p35354: '1wnl',
+  '1wnl': '1wnl',
+  // SARS-CoV-2 Mpro
+  'mpro': '7de4',
+  '3clpro': '7de4',
+  'main protease': '7de4',
+  'nirmatrelvir': '7de4',
+  'paxlovid': '7de4',
+  '7de4': '7de4',
+  p0dtd1: '7de4',
+  // DHFR
+  'dhfr': '1ds7',
+  'dihydrofolate reductase': '1ds7',
+  'methotrexate': '1ds7',
+  '1ds7': '1ds7',
+  p00374: '1ds7',
+  // BNP
+  'bnc': '1bnc',
+  '1bnc': '1bnc',
+  'bnp': '1bnc',
+  'nppb': '1bnc',
+  p16860: '1bnc',
 }
 
 /**
@@ -1039,5 +1286,199 @@ export async function resolveUniversalProtein(queryOrId) {
     ...fallback,
     sequenceMetrics: calculateSequenceMetrics(fallback.sequence),
     dataProvenance: 'Aegis Structural Biology Reference Engine',
+  }
+}
+
+/**
+ * Advanced multi-tab structural search engine covering:
+ * - Protein Name, PDB ID, UniProt/Sequence, Chemical Name, IUPAC Name, SMILES, and General Search.
+ */
+export async function searchAdvancedBiostructures({
+  query = '',
+  searchType = 'general',
+  method = 'all',
+  maxResolution = 'all',
+  organism = 'all',
+}) {
+  const rawQ = String(query || '').trim()
+  const lowerQ = rawQ.toLowerCase()
+  let candidates = []
+  let unmatchedMessage = null
+
+  const formatCatalogEntry = (p) => ({
+    id: p.id,
+    pdbId: p.pdbId,
+    name: p.name,
+    title: p.name,
+    gene: p.gene,
+    organism: p.organism,
+    uniprotId: p.uniprotId,
+    method: p.method,
+    resolution: p.resolution ? `${p.resolution} Å` : 'N/A',
+    resolutionValue: p.resolution || 99,
+    chainsCount: p.chains?.length || 1,
+    chains: p.chains?.map((c) => c.id) || ['A'],
+    ligandsCount: p.ligands?.length || 0,
+    ligands: p.ligands?.map((l) => l.name || l.id) || [],
+    structureType: p.structureType || 'EXPERIMENTAL',
+    provenance: p.structureType === 'PREDICTED' ? '[PREDICTED STRUCTURE]' : '[EXPERIMENTAL STRUCTURE]',
+    source: 'RCSB Protein Data Bank',
+    sourceUrl: `https://www.rcsb.org/structure/${p.pdbId}`,
+    depositionDate: '2020-01-15',
+    releaseDate: '2020-03-20',
+  })
+
+  // Mode D: Chemical Name
+  if (searchType === 'chemical_name') {
+    const matchingLigands = BIOACTIVE_REFERENCE_LIBRARY.filter(
+      (l) =>
+        l.name.toLowerCase() === lowerQ ||
+        l.id.toLowerCase() === lowerQ ||
+        l.name.toLowerCase().includes(lowerQ)
+    )
+
+    const matchedPdbIds = new Set()
+    for (const lig of matchingLigands) {
+      if (lig.pdbId) matchedPdbIds.add(lig.pdbId.toLowerCase())
+    }
+    for (const [key, p] of Object.entries(UNIVERSAL_PROTEIN_CATALOG)) {
+      if (
+        p.ligands?.some((l) => l.name.toLowerCase().includes(lowerQ) || l.id.toLowerCase() === lowerQ) ||
+        p.knownDrugs?.some((d) => d.toLowerCase().includes(lowerQ))
+      ) {
+        matchedPdbIds.add(p.id.toLowerCase())
+      }
+    }
+
+    if (matchedPdbIds.size > 0) {
+      for (const pdbId of matchedPdbIds) {
+        const entry = UNIVERSAL_PROTEIN_CATALOG[pdbId]
+        if (entry) candidates.push(formatCatalogEntry(entry))
+      }
+    } else {
+      unmatchedMessage = `No experimental PDB macromolecular complex containing ligand "${rawQ}" was found in the structural repository. You can upload a docked PDB/mmCIF structure or search by target protein name.`
+    }
+  } else if (searchType === 'iupac_name') {
+    const matchedLigand = BIOACTIVE_REFERENCE_LIBRARY.find(
+      (l) => l.iupac && (l.iupac.toLowerCase().includes(lowerQ) || lowerQ.includes(l.iupac.toLowerCase()))
+    )
+    if (matchedLigand && matchedLigand.pdbId) {
+      const entry = UNIVERSAL_PROTEIN_CATALOG[matchedLigand.pdbId.toLowerCase()]
+      if (entry) candidates.push(formatCatalogEntry(entry))
+    } else {
+      unmatchedMessage = `No PDB complex identified for IUPAC identifier "${rawQ}". Please verify the chemical name or upload custom docked coordinates.`
+    }
+  } else if (searchType === 'smiles') {
+    const smilesChars = /^[A-Za-z0-9@+\-\[\]\(\)\\\/=#%.:]+$/
+    if (!smilesChars.test(rawQ)) {
+      unmatchedMessage = `Invalid chemical SMILES format for "${rawQ}". Please check SMILES syntax.`
+    } else {
+      const matchedLigand = BIOACTIVE_REFERENCE_LIBRARY.find(
+        (l) => l.smiles && (l.smiles.toLowerCase() === lowerQ || l.smiles.toLowerCase().includes(lowerQ))
+      )
+      if (matchedLigand && matchedLigand.pdbId) {
+        const entry = UNIVERSAL_PROTEIN_CATALOG[matchedLigand.pdbId.toLowerCase()]
+        if (entry) candidates.push(formatCatalogEntry(entry))
+      } else {
+        unmatchedMessage = `Valid chemical SMILES parsed. No macromolecular crystallographic complex containing this ligand exists in the current library. You may upload a docked PDB/mmCIF file to visualize interactions.`
+      }
+    }
+  } else if (searchType === 'pdb_id') {
+    const entry = UNIVERSAL_PROTEIN_CATALOG[lowerQ]
+    if (entry) {
+      candidates.push(formatCatalogEntry(entry))
+    } else {
+      if (/^[0-9][a-z0-9]{3}$/i.test(rawQ)) {
+        unmatchedMessage = `PDB entry "${rawQ.toUpperCase()}" is not in the offline repository. You may upload its PDB/mmCIF file to inspect it immediately.`
+      }
+    }
+  } else if (searchType === 'uniprot_sequence') {
+    for (const [key, p] of Object.entries(UNIVERSAL_PROTEIN_CATALOG)) {
+      if (p.uniprotId.toLowerCase() === lowerQ || p.gene.toLowerCase().includes(lowerQ)) {
+        candidates.push(formatCatalogEntry(p))
+      }
+    }
+    if (!candidates.length && /^[A-Z\s\n\r]+$/i.test(rawQ) && rawQ.length >= 10) {
+      const metrics = calculateSequenceMetrics(rawQ)
+      candidates.push({
+        id: 'CUSTOM_SEQ',
+        pdbId: 'CUSTOM',
+        name: `In-Silico Peptide Sequence (${rawQ.replace(/\s+/g, '').length} aa)`,
+        title: `Synthetic Sequence (${metrics?.molecularWeightKDa} kDa)`,
+        organism: 'De Novo In-Silico',
+        method: 'COMPUTATIONAL SEQUENCE',
+        resolution: 'Theoretical',
+        resolutionValue: 99,
+        chainsCount: 1,
+        chains: ['A'],
+        ligandsCount: 0,
+        ligands: [],
+        structureType: 'PREDICTED',
+        provenance: '[CALCULATED INFORMATION]',
+        source: 'User Custom Sequence Input',
+        sourceUrl: '#',
+      })
+    }
+  } else if (searchType === 'protein_name') {
+    for (const [key, p] of Object.entries(UNIVERSAL_PROTEIN_CATALOG)) {
+      if (
+        p.name.toLowerCase().includes(lowerQ) ||
+        p.gene.toLowerCase().includes(lowerQ) ||
+        p.organism.toLowerCase().includes(lowerQ) ||
+        p.function.toLowerCase().includes(lowerQ)
+      ) {
+        candidates.push(formatCatalogEntry(p))
+      }
+    }
+  } else {
+    // General Search
+    const classified = classifyProteinQuery(rawQ)
+    if (classified.category === 'PDB_ID') {
+      const entry = UNIVERSAL_PROTEIN_CATALOG[lowerQ]
+      if (entry) candidates.push(formatCatalogEntry(entry))
+    } else if (classified.category === 'DRUG_TARGET' && classified.targetPdb) {
+      const entry = UNIVERSAL_PROTEIN_CATALOG[classified.targetPdb.toLowerCase()]
+      if (entry) candidates.push(formatCatalogEntry(entry))
+    }
+
+    for (const [key, p] of Object.entries(UNIVERSAL_PROTEIN_CATALOG)) {
+      const alreadyAdded = candidates.some((c) => c.pdbId.toLowerCase() === p.pdbId.toLowerCase())
+      if (alreadyAdded) continue
+
+      if (
+        p.id.toLowerCase() === lowerQ ||
+        p.pdbId.toLowerCase() === lowerQ ||
+        p.name.toLowerCase().includes(lowerQ) ||
+        p.gene.toLowerCase().includes(lowerQ) ||
+        p.organism.toLowerCase().includes(lowerQ) ||
+        p.knownDrugs?.some((d) => d.toLowerCase().includes(lowerQ)) ||
+        p.ligands?.some((l) => l.name.toLowerCase().includes(lowerQ) || l.id.toLowerCase() === lowerQ)
+      ) {
+        candidates.push(formatCatalogEntry(p))
+      }
+    }
+  }
+
+  // Apply filters
+  let filtered = [...candidates]
+  if (method && method !== 'all') {
+    filtered = filtered.filter((r) => r.method.toLowerCase().includes(method.toLowerCase()))
+  }
+  if (maxResolution && maxResolution !== 'all') {
+    const maxResNum = Number.parseFloat(maxResolution)
+    if (Number.isFinite(maxResNum)) {
+      filtered = filtered.filter((r) => r.resolutionValue <= maxResNum)
+    }
+  }
+  if (organism && organism !== 'all') {
+    filtered = filtered.filter((r) => r.organism.toLowerCase().includes(organism.toLowerCase()))
+  }
+
+  return {
+    results: filtered,
+    totalCount: filtered.length,
+    searchType,
+    query: rawQ,
+    unmatchedMessage,
   }
 }

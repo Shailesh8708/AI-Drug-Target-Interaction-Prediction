@@ -98,42 +98,6 @@ export const BIPASHA_ACTIONS = [
     ],
   },
   {
-    id: 'studio',
-    label: 'Molecular Studio',
-    category: 'Discovery',
-    iconName: 'Atom',
-    description: 'Create, validate, inspect, and export structured molecular graphs.',
-    route: 'studio',
-    animationType: 'visualize',
-    color: '#397654',
-    badge: 'Build',
-    stages: [
-      { min: 0, max: 20, text: 'Opening molecular graph editor...', subtext: 'Preparing a structured, editable molecule' },
-      { min: 21, max: 45, text: 'Loading chemistry toolbox...', subtext: 'Preparing atoms, bonds, and reusable templates' },
-      { min: 46, max: 70, text: 'Preparing molecular inspector...', subtext: 'Calculating deterministic graph descriptors' },
-      { min: 71, max: 88, text: 'Preparing export workflow...', subtext: 'Keeping JSON and MOL data tied to the graph' },
-      { min: 89, max: 100, text: 'Molecular Studio ready', subtext: 'Build and inspect a research structure' },
-    ],
-  },
-  {
-    id: 'drugs',
-    label: 'Drug Analysis',
-    category: 'Discovery',
-    iconName: 'Pill',
-    description: 'Drug intelligence, pharmacology, targets, bioactivity, ADME, and AI DTI analysis',
-    route: 'drugs',
-    animationType: 'drugs',
-    color: '#059669',
-    badge: 'Intel',
-    stages: [
-      { min: 0, max: 20, text: 'Querying Drug Intelligence Knowledge Base...', subtext: 'Resolving identifiers across PubChem, ChEMBL, and PDB' },
-      { min: 21, max: 45, text: 'Calculating Physicochemical Descriptors...', subtext: 'Auditing Lipinski, Veber, Ghose rules and ADMET envelopes' },
-      { min: 46, max: 70, text: 'Synthesizing Biological Target Topology...', subtext: 'Mapping bioactivity assays, CYP pathways, and DDI risks' },
-      { min: 71, max: 88, text: 'Calibrating Explainable DTI Matrices...', subtext: 'Evaluating SHAP attributions and molecular similarity' },
-      { min: 89, max: 100, text: 'Drug Intelligence Workstation Online', subtext: 'Entering comprehensive pharmacological dossier' },
-    ],
-  },
-  {
     id: 'targets',
     label: 'Target Analysis',
     category: 'Discovery',
@@ -303,7 +267,7 @@ export function getContextualGreeting(pageId) {
         greeting: "Hello! Let's explore 3D molecular structures and Lipinski descriptors.",
         subtext: "Analyze atomic conformations, hydrogen bond donors/acceptors, and topological polar surface area.",
         quickActions: [
-          { label: 'Screen Compound', actionId: 'drugs' },
+          { label: 'Compare Structure', actionId: 'compare' },
           { label: 'Predict DTI Affinity', actionId: 'dti' },
           { label: 'Research Papers', actionId: 'research' },
         ],
@@ -329,26 +293,6 @@ export function getContextualGreeting(pageId) {
           { label: 'Open 3D Visualizer', actionId: 'visualize' },
         ],
       }
-    case 'studio':
-      return {
-        greeting: "Welcome to Molecular Studio. Build a structured molecule and inspect what the current graph can prove.",
-        subtext: "Templates, atom and bond editing, deterministic graph descriptors, and explicit chemistry-engine boundaries are ready.",
-        quickActions: [
-          { label: 'Open DTI Lab', actionId: 'dti' },
-          { label: 'Visualize a compound', actionId: 'visualize' },
-          { label: 'Research methodology', actionId: 'research' },
-        ],
-      }
-    case 'drugs':
-      return {
-        greeting: "Welcome to Drug Intelligence & Analysis! Ready to explore pharmacology and DTI networks?",
-        subtext: "Review 3D structures, bioactivity assays, targets, ADMET profiles, and AI-predicted interactions.",
-        quickActions: [
-          { label: '3D BioStructure', actionId: 'biostructure' },
-          { label: 'Compare Structures', actionId: 'compare' },
-          { label: 'Predict DTI Affinity', actionId: 'dti' },
-        ],
-      }
     case 'targets':
       return {
         greeting: "Hello! Ready to inspect biological target sequences and binding pockets?",
@@ -366,7 +310,7 @@ export function getContextualGreeting(pageId) {
         quickActions: [
           { label: 'Check Expiries', actionId: 'expiry' },
           { label: 'View Schedule', actionId: 'schedule' },
-          { label: 'Drug Profiles', actionId: 'drugs' },
+          { label: 'DTI Lab', actionId: 'dti' },
         ],
       }
     case 'expiry':
@@ -489,15 +433,6 @@ export function parseAgentIntent(rawQuery) {
     }
   }
 
-  if (query.includes('molecular studio') || query.includes('draw molecule') || query.includes('create molecule') || query.includes('chemical editor')) {
-    return {
-      type: 'navigate',
-      targetAction: 'studio',
-      text: "Opening Molecular Studio for structured chemical editing and inspection.",
-      actionLabel: 'Open Molecular Studio',
-    }
-  }
-
   if (
     query.includes('compare') ||
     query.includes('comparison') ||
@@ -531,28 +466,6 @@ export function parseAgentIntent(rawQuery) {
       targetAction: 'visualize',
       text: "Opening the compound visualization workspace to inspect structure, properties, and 3D geometry.",
       actionLabel: 'Visualize Compound',
-    }
-  }
-
-  if (
-    query.includes('drug analysis') ||
-    query.includes('drug intelligence') ||
-    query.includes('admet') ||
-    query.includes('bioactivity') ||
-    query.includes('chemotype') ||
-    query.includes('compound analysis') ||
-    query.includes('pharmacology') ||
-    query.includes('drug interaction') ||
-    query.includes('ddi') ||
-    query.includes('pharmacogenomics') ||
-    query.includes('ciprofloxacin') ||
-    query.includes('ask the drug')
-  ) {
-    return {
-      type: 'navigate',
-      targetAction: 'drugs',
-      text: "Navigating to Drug Intelligence & Analysis for comprehensive pharmacological profiling, ADMET, and DTI intelligence.",
-      actionLabel: 'Open Drug Analysis',
     }
   }
 

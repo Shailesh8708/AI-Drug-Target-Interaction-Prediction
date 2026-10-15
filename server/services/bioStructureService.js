@@ -42,17 +42,27 @@ const MEMORY_CACHE = new Map()
 
 // Reference drug database for chemical similarity searches
 export const BIOACTIVE_REFERENCE_LIBRARY = [
-  { id: 'CPF', name: 'Ciprofloxacin', smiles: 'C1CC1N2C=C(C(=O)C3=CC(=C(C=C32)N4CCNCC4)F)C(=O)O', formula: 'C17H18FN3O3', mw: 331.34, class: 'Fluoroquinolone antibiotic', target: 'DNA Gyrase / Topoisomerase IV' },
-  { id: 'LVX', name: 'Levofloxacin', smiles: 'CC1COC2=C3N1C=C(C(=O)C3=CC(=C2N4CCN(CC4)C)F)C(=O)O', formula: 'C18H20FN3O4', mw: 361.37, class: 'Fluoroquinolone antibiotic', target: 'DNA Gyrase' },
-  { id: 'MOX', name: 'Moxifloxacin', smiles: 'COC1=C2N(C=C(C(=O)C2=CC(=C1C3CNCC4CCCNC34)F)C(=O)O)C5CC5', formula: 'C21H24FN3O4', mw: 401.43, class: 'Fluoroquinolone antibiotic', target: 'DNA Gyrase' },
-  { id: 'NOR', name: 'Norfloxacin', smiles: 'CCN1C=C(C(=O)C2=CC(=C(C=C21)N3CCNCC3)F)C(=O)O', formula: 'C16H18FN3O3', mw: 319.33, class: 'Fluoroquinolone antibiotic', target: 'DNA Gyrase' },
-  { id: 'OFX', name: 'Ofloxacin', smiles: 'CC1COC2=C3N1C=C(C(=O)C3=CC(=C2N4CCN(CC4)C)F)C(=O)O', formula: 'C18H20FN3O4', mw: 361.37, class: 'Fluoroquinolone antibiotic', target: 'DNA Gyrase' },
-  { id: 'MK1', name: 'Indinavir', smiles: 'CC(C)(C)NC(=O)C1CC2CCCCC2CN1CC(CC(CC3=CC=CC=C3)C(=O)NC4C(CC5=CC=CC=C45)O)O', formula: 'C36H47N5O4', mw: 613.79, class: 'HIV-1 Protease Inhibitor', target: 'HIV-1 Protease' },
-  { id: 'SAQ', name: 'Saquinavir', smiles: 'CC(C)(C)NC(=O)C1CC2CCCCC2CN1CC(C(CC3=CC=CC=C3)NC(=O)C(CC(=O)N)NC(=O)C4=NC5=CC=CC=C5C=C4)O', formula: 'C38H50N6O5', mw: 670.84, class: 'HIV-1 Protease Inhibitor', target: 'HIV-1 Protease' },
+  { id: 'CPF', name: 'Ciprofloxacin', smiles: 'C1CC1N2C=C(C(=O)C3=CC(=C(C=C32)N4CCNCC4)F)C(=O)O', formula: 'C17H18FN3O3', mw: 331.34, class: 'Fluoroquinolone antibiotic', target: 'DNA Gyrase / Topoisomerase IV', iupac: '1-cyclopropyl-6-fluoro-4-oxo-7-piperazin-1-ylquinoline-3-carboxylic acid', pdbId: '2XCT' },
+  { id: 'LVX', name: 'Levofloxacin', smiles: 'CC1COC2=C3N1C=C(C(=O)C3=CC(=C2N4CCN(CC4)C)F)C(=O)O', formula: 'C18H20FN3O4', mw: 361.37, class: 'Fluoroquinolone antibiotic', target: 'DNA Gyrase', iupac: '(3S)-9-fluoro-3-methyl-10-(4-methylpiperazin-1-yl)-7-oxo-2,3-dihydro-7H-[1,4]oxazino[2,3,4-ij]quinoline-6-carboxylic acid', pdbId: '2XCT' },
+  { id: 'MOX', name: 'Moxifloxacin', smiles: 'COC1=C2N(C=C(C(=O)C2=CC(=C1C3CNCC4CCCNC34)F)C(=O)O)C5CC5', formula: 'C21H24FN3O4', mw: 401.43, class: 'Fluoroquinolone antibiotic', target: 'DNA Gyrase', pdbId: '2XCT' },
+  { id: 'NOR', name: 'Norfloxacin', smiles: 'CCN1C=C(C(=O)C2=CC(=C(C=C21)N3CCNCC3)F)C(=O)O', formula: 'C16H18FN3O3', mw: 319.33, class: 'Fluoroquinolone antibiotic', target: 'DNA Gyrase', pdbId: '2XCT' },
+  { id: 'OFX', name: 'Ofloxacin', smiles: 'CC1COC2=C3N1C=C(C(=O)C3=CC(=C2N4CCN(CC4)C)F)C(=O)O', formula: 'C18H20FN3O4', mw: 361.37, class: 'Fluoroquinolone antibiotic', target: 'DNA Gyrase', pdbId: '2XCT' },
+  { id: 'MK1', name: 'Indinavir', smiles: 'CC(C)(C)NC(=O)C1CC2CCCCC2CN1CC(CC(CC3=CC=CC=C3)C(=O)NC4C(CC5=CC=CC=C45)O)O', formula: 'C36H47N5O4', mw: 613.79, class: 'HIV-1 Protease Inhibitor', target: 'HIV-1 Protease', iupac: '(2S)-1-[(2S,4R)-4-benzyl-2-hydroxy-5-[[(1S,2R)-2-hydroxy-2,3-dihydro-1H-inden-1-yl]amino]-5-oxopentyl]-N-tert-butyl-4-(pyridin-3-ylmethyl)piperazine-2-carboxamide', pdbId: '1HSG' },
+  { id: 'SAQ', name: 'Saquinavir', smiles: 'CC(C)(C)NC(=O)C1CC2CCCCC2CN1CC(C(CC3=CC=CC=C3)NC(=O)C(CC(=O)N)NC(=O)C4=NC5=CC=CC=C5C=C4)O', formula: 'C38H50N6O5', mw: 670.84, class: 'HIV-1 Protease Inhibitor', target: 'HIV-1 Protease', pdbId: '1HXB' },
+  { id: 'ROC', name: 'Saquinavir', smiles: 'CC(C)(C)NC(=O)C1CC2CCCCC2CN1CC(C(CC3=CC=CC=C3)NC(=O)C(CC(=O)N)NC(=O)C4=NC5=CC=CC=C5C=C4)O', formula: 'C38H50N6O5', mw: 670.84, class: 'HIV-1 Protease Inhibitor', target: 'HIV-1 Protease', pdbId: '1HXB' },
   { id: 'RIT', name: 'Ritonavir', smiles: 'CC(C)C1=NC(=CS1)CN(C)C(=O)NC(C(C)C)C(=O)NC(CC2=CC=CC=C2)CC(C(CC3=CC=CC=C3)NC(=O)OCC4=CN=CS4)O', formula: 'C37H48N6O5S2', mw: 720.94, class: 'HIV-1 Protease Inhibitor', target: 'HIV-1 Protease' },
-  { id: 'IMN', name: 'Indomethacin', smiles: 'CC1=C(C2=C(N1C(=O)C3=CC=C(C=C3)Cl)C=CC(=C2)OC)CC(=O)O', formula: 'C19H16ClNO4', mw: 357.79, class: 'NSAID / COX Inhibitor', target: 'Cyclooxygenase-1 & 2' },
-  { id: 'CEL', name: 'Celecoxib', smiles: 'CC1=CC=C(C=C1)C2=CC(=NN2C3=CC=C(C=C3)S(=O)(=O)N)C(F)(F)F', formula: 'C17H14F3N3O2S', mw: 381.37, class: 'Selective COX-2 Inhibitor', target: 'Cyclooxygenase-2' },
-  { id: 'OHT', name: '4-Hydroxytamoxifen', smiles: 'CCC(=C(C1=CC=C(C=C1)OCCN(C)C)C2=CC=CC=C2)C3=CC=C(C=C3)O', formula: 'C26H29NO2', mw: 387.51, class: 'SERM / Estrogen Receptor Modulator', target: 'Estrogen Receptor Alpha' },
+  { id: 'IMN', name: 'Indomethacin', smiles: 'CC1=C(C2=C(N1C(=O)C3=CC=C(C=C3)Cl)C=CC(=C2)OC)CC(=O)O', formula: 'C19H16ClNO4', mw: 357.79, class: 'NSAID / COX Inhibitor', target: 'Cyclooxygenase-1 & 2', iupac: '2-[1-(4-chlorobenzoyl)-5-methoxy-2-methylindol-3-yl]acetic acid', pdbId: '1WNL' },
+  { id: 'CEL', name: 'Celecoxib', smiles: 'CC1=CC=C(C=C1)C2=CC(=NN2C3=CC=C(C=C3)S(=O)(=O)N)C(F)(F)F', formula: 'C17H14F3N3O2S', mw: 381.37, class: 'Selective COX-2 Inhibitor', target: 'Cyclooxygenase-2', iupac: '4-[5-(4-methylphenyl)-3-(trifluoromethyl)pyrazol-1-yl]benzenesulfonamide', pdbId: '1WNL' },
+  { id: 'OHT', name: '4-Hydroxytamoxifen', smiles: 'CCC(=C(C1=CC=C(C=C1)OCCN(C)C)C2=CC=CC=C2)C3=CC=C(C=C3)O', formula: 'C26H29NO2', mw: 387.51, class: 'SERM / Estrogen Receptor Modulator', target: 'Estrogen Receptor Alpha', iupac: '4-[(1Z)-1-[4-[2-(dimethylamino)ethoxy]phenyl]-2-phenylbut-1-en-1-yl]phenol', pdbId: '1OD2' },
+  { id: 'MTX', name: 'Methotrexate', smiles: 'CN(CC1=CN=C2C(=N1)C(=NC(=N2)N)N)C3=CC=C(C=C3)C(=O)NC(CCC(=O)O)C(=O)O', formula: 'C20H22N8O5', mw: 454.44, class: 'Antifolate / Antineoplastic', target: 'Dihydrofolate Reductase (DHFR)', iupac: '(2S)-2-[[4-[(2,4-diaminopteridin-6-yl)methyl-methylamino]benzoyl]amino]pentanedioic acid', pdbId: '1DS7' },
+  { id: 'U19', name: 'Nirmatrelvir', smiles: 'CC1(C2C1C(N2C(=O)C(C(C)(C)C)NC(=O)C(F)(F)F)C(=O)NC(CC3CCNC3=O)C#N)C', formula: 'C23H32F3N5O4', mw: 499.53, class: 'SARS-CoV-2 3CLpro Inhibitor', target: 'SARS-CoV-2 Main Protease', iupac: '(1R,2S,5S)-N-[(1E,2S)-1-cyano-2-(2-oxopyrrolidin-3-yl)ethyl]-6,6-dimethyl-3-[(2S)-3-methyl-2-(2,2,2-trifluoroacetamido)butanoyl]-3-azabicyclo[3.1.0]hexane-2-carboxamide', pdbId: '7DE4' },
+  { id: 'NIR', name: 'Nirmatrelvir', smiles: 'CC1(C2C1C(N2C(=O)C(C(C)(C)C)NC(=O)C(F)(F)F)C(=O)NC(CC3CCNC3=O)C#N)C', formula: 'C23H32F3N5O4', mw: 499.53, class: 'SARS-CoV-2 3CLpro Inhibitor', target: 'SARS-CoV-2 Main Protease', iupac: '(1R,2S,5S)-N-[(1E,2S)-1-cyano-2-(2-oxopyrrolidin-3-yl)ethyl]-6,6-dimethyl-3-[(2S)-3-methyl-2-(2,2,2-trifluoroacetamido)butanoyl]-3-azabicyclo[3.1.0]hexane-2-carboxamide', pdbId: '7DE4' },
+  { id: 'AQ4', name: 'Erlotinib', smiles: 'COCCOC1=C(C=C2C(=C1)C(=NC=N2)NC3=CC=CC(=C3)C#C)OCCOC', formula: 'C22H23N3O4', mw: 393.44, class: 'Receptor Tyrosine Kinase Inhibitor', target: 'EGFR Kinase Domain', iupac: 'N-(3-ethynylphenyl)-6,7-bis(2-methoxyethoxy)quinazolin-4-amine', pdbId: '1M17' },
+  { id: 'HEM', name: 'Heme (Protoporphyrin IX with Fe)', smiles: 'CC1=C(C2=CC3=C(C(=C(N3)C=C4C(=C(C(=N4)C=C5C(=C(C(=N5)C=C1N2)C=C)C)CCC(=O)O)CCC(=O)O)C)C=C)C', formula: 'C34H32FeN4O4', mw: 616.49, class: 'Prosthetic iron porphyrin group', target: 'Deoxyhemoglobin / Cyclooxygenase', iupac: 'ferroprotoporphyrin IX', pdbId: '4HHB' },
+  { id: 'PHN', name: 'Phenol', smiles: 'C1=CC=C(C=C1)O', formula: 'C6H6O', mw: 94.11, class: 'Conformational stabilizer', target: 'Insulin Hexamer', iupac: 'phenol', pdbId: '4INS' },
+  { id: 'STI', name: 'Imatinib', smiles: 'CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)CN3CCN(CC3)C)NC4=NC=CC(=N4)C5=CN=CC=C5', formula: 'C29H31N7O', mw: 493.60, class: 'Bcr-Abl Tyrosine Kinase Inhibitor', target: 'ABL1 / KIT / PDGFR', iupac: '4-[(4-methylpiperazin-1-yl)methyl]-N-[4-methyl-3-[(4-pyridin-3-ylpyrimidin-2-yl)amino]phenyl]benzamide', pdbId: '1M17' },
+  { id: 'AIN', name: 'Aspirin', smiles: 'CC(=O)OC1=CC=CC=C1C(=O)O', formula: 'C9H8O4', mw: 180.16, class: 'NSAID / Cyclooxygenase inhibitor', target: 'Cyclooxygenase-1 & 2', iupac: '2-acetoxybenzoic acid', pdbId: '1WNL' },
+  { id: 'SAL', name: 'Salicylate', smiles: 'C1=CC=C(C(=C1)C(=O)O)O', formula: 'C7H6O3', mw: 138.12, class: 'Anti-inflammatory / Salicylate', target: 'Cyclooxygenase', iupac: '2-hydroxybenzoic acid', pdbId: '1WNL' },
 ]
 
 // Standard amino acids 3-letter to 1-letter map
@@ -328,6 +338,414 @@ export function parsePdbStructure(rawText, pdbId = '2XCT') {
     totalAtoms: atoms.length,
     totalResidues: residuesMap.size,
   }
+}
+
+/**
+ * Parses macromolecular crystallographic information (mmCIF / PDBx) files.
+ */
+export function parseMmCifStructure(rawText, fallbackId = 'UPLOADED') {
+  const lines = rawText.split(/\r?\n/)
+  const cleanId = String(fallbackId || 'UPLOADED').trim().toUpperCase()
+
+  const metadata = {
+    structureId: cleanId,
+    title: 'Macromolecular Structure (mmCIF)',
+    experimentalMethod: 'X-RAY DIFFRACTION',
+    resolution: null,
+    rWork: null,
+    rFree: null,
+    spaceGroup: null,
+    depositionDate: null,
+    releaseDate: null,
+    organism: 'Source unassigned',
+    source: 'mmCIF Structural Data',
+    provenance: 'EXPERIMENTAL',
+    badge: '[USER UPLOADED STRUCTURE]',
+  }
+
+  // Parse header tags
+  for (let i = 0; i < Math.min(lines.length, 400); i++) {
+    const l = lines[i].trim()
+    if (l.startsWith('_entry.id')) {
+      const parts = l.split(/\s+/)
+      if (parts[1]) metadata.structureId = parts[1].replace(/['"]/g, '').toUpperCase()
+    } else if (l.startsWith('_struct.title')) {
+      const match = l.match(/_struct\.title\s+['"]?([^'"]+)['"]?/i)
+      if (match) metadata.title = match[1].trim()
+    } else if (l.startsWith('_exptl.method')) {
+      const match = l.match(/_exptl\.method\s+['"]?([^'"]+)['"]?/i)
+      if (match) metadata.experimentalMethod = match[1].trim()
+    } else if (l.startsWith('_refine.ls_d_res_high')) {
+      const parts = l.split(/\s+/)
+      if (parts[1]) {
+        const val = Number.parseFloat(parts[1])
+        if (Number.isFinite(val)) metadata.resolution = val
+      }
+    }
+  }
+
+  let inAtomSiteLoop = false
+  const atomSiteTags = []
+  const atomRows = []
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim()
+    if (!line || line.startsWith('#')) continue
+
+    if (line === 'loop_') {
+      let j = i + 1
+      while (j < lines.length && lines[j].trim().startsWith('#')) j++
+      if (j < lines.length && lines[j].trim().startsWith('_atom_site.')) {
+        inAtomSiteLoop = true
+        atomSiteTags.length = 0
+        i = j - 1
+        continue
+      } else if (inAtomSiteLoop) {
+        break
+      }
+    }
+
+    if (inAtomSiteLoop) {
+      if (line.startsWith('_atom_site.')) {
+        atomSiteTags.push(line.replace('_atom_site.', '').trim())
+      } else if (line.startsWith('_') || line.startsWith('loop_') || line.startsWith('data_')) {
+        break
+      } else {
+        atomRows.push(line)
+      }
+    }
+  }
+
+  if (!atomRows.length) {
+    if (rawText.includes('ATOM  ') || rawText.includes('HETATM')) {
+      return parsePdbStructure(rawText, cleanId)
+    }
+    throw new Error('No _atom_site coordinate records identified in mmCIF file.')
+  }
+
+  const getCol = (names) => {
+    for (const name of names) {
+      const idx = atomSiteTags.indexOf(name)
+      if (idx !== -1) return idx
+    }
+    return -1
+  }
+
+  const colGroup = getCol(['group_PDB'])
+  const colId = getCol(['id'])
+  const colType = getCol(['type_symbol'])
+  const colAtomName = getCol(['auth_atom_id', 'label_atom_id'])
+  const colResName = getCol(['auth_comp_id', 'label_comp_id'])
+  const colChain = getCol(['auth_asym_id', 'label_asym_id'])
+  const colSeqNum = getCol(['auth_seq_id', 'label_seq_id'])
+  const colX = getCol(['Cartn_x'])
+  const colY = getCol(['Cartn_y'])
+  const colZ = getCol(['Cartn_z'])
+  const colOcc = getCol(['occupancy'])
+  const colB = getCol(['B_iso_or_equiv'])
+
+  const atoms = []
+  const chainsMap = new Map()
+  const residuesMap = new Map()
+  const ligandsMap = new Map()
+  const metalsMap = new Map()
+  const nucleicChains = new Set()
+  const proteinChains = new Set()
+
+  for (let r = 0; r < atomRows.length; r++) {
+    const row = atomRows[r]
+    const tokens = row.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g)
+    if (!tokens || tokens.length < atomSiteTags.length) continue
+
+    const record = colGroup >= 0 ? tokens[colGroup].toUpperCase() : (row.startsWith('HETATM') ? 'HETATM' : 'ATOM')
+    if (record !== 'ATOM' && record !== 'HETATM') continue
+
+    const x = colX >= 0 ? Number.parseFloat(tokens[colX]) : NaN
+    const y = colY >= 0 ? Number.parseFloat(tokens[colY]) : NaN
+    const z = colZ >= 0 ? Number.parseFloat(tokens[colZ]) : NaN
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue
+
+    const serial = colId >= 0 ? Number.parseInt(tokens[colId], 10) || r + 1 : r + 1
+    const atomName = (colAtomName >= 0 ? tokens[colAtomName] : 'CA').replace(/['"]/g, '')
+    const resName = (colResName >= 0 ? tokens[colResName] : 'UNK').replace(/['"]/g, '')
+    const chainId = (colChain >= 0 ? tokens[colChain] : 'A').replace(/['"]/g, '')
+    const resNum = colSeqNum >= 0 ? Number.parseInt(tokens[colSeqNum], 10) || 1 : 1
+    const residueId = `${chainId}:${resNum}`
+
+    const occupancy = colOcc >= 0 ? Number.parseFloat(tokens[colOcc]) || 1.0 : 1.0
+    const bFactor = colB >= 0 ? Number.parseFloat(tokens[colB]) || 0.0 : 0.0
+    let element = (colType >= 0 ? tokens[colType] : atomName.replace(/[0-9]/g, '')[0] || 'C').toUpperCase().replace(/['"]/g, '')
+
+    const isWater = WATER_NAMES.has(resName)
+    const isNucleic = NUCLEIC_ACID_RESIDUES.has(resName)
+    const isMetal = METAL_ELEMENTS.has(element) || METAL_ELEMENTS.has(resName)
+    const isStandardAA = Boolean(AMINO_ACID_MAP[resName])
+
+    const atom = {
+      serial,
+      name: atomName,
+      resName,
+      chainId,
+      resNum,
+      residueId,
+      x,
+      y,
+      z,
+      occupancy,
+      bFactor,
+      element,
+      record,
+      isWater,
+      isNucleic,
+      isMetal,
+      isStandardAA,
+    }
+    atoms.push(atom)
+
+    if (!chainsMap.has(chainId)) {
+      chainsMap.set(chainId, {
+        id: chainId,
+        type: isNucleic ? 'dna' : 'protein',
+        description: isNucleic ? 'Nucleic Acid Polymer' : 'Polypeptide Chain',
+        residues: [],
+        atomIndices: [],
+        sequence: '',
+      })
+    }
+    const chain = chainsMap.get(chainId)
+    chain.atomIndices.push(atoms.length - 1)
+    if (isNucleic) nucleicChains.add(chainId)
+    else if (isStandardAA) proteinChains.add(chainId)
+
+    if (!residuesMap.has(residueId)) {
+      const oneLetter = isStandardAA
+        ? AMINO_ACID_MAP[resName]
+        : isNucleic
+        ? resName.slice(-1)
+        : 'X'
+      if (isStandardAA || isNucleic) {
+        chain.sequence += oneLetter
+      }
+
+      residuesMap.set(residueId, {
+        id: residueId,
+        resName,
+        resNum,
+        chainId,
+        oneLetter,
+        isStandardAA,
+        isNucleic,
+        atomIndices: [],
+      })
+      chain.residues.push(residueId)
+    }
+
+    const res = residuesMap.get(residueId)
+    res.atomIndices.push(atoms.length - 1)
+    if (atomName === 'CA' || (isNucleic && atomName === "C4'")) {
+      res.caIndex = atoms.length - 1
+    }
+
+    if (record === 'HETATM' && !isWater && !isMetal && !isStandardAA && !isNucleic) {
+      if (!ligandsMap.has(resName)) {
+        ligandsMap.set(resName, {
+          id: resName,
+          name: resName,
+          chainId,
+          residueId,
+          resNum,
+          atomIndices: [],
+          atoms: [],
+        })
+      }
+      const lig = ligandsMap.get(resName)
+      lig.atomIndices.push(atoms.length - 1)
+      lig.atoms.push(atom)
+    }
+
+    if (isMetal) {
+      const metalKey = `${resName}-${residueId}`
+      if (!metalsMap.has(metalKey)) {
+        metalsMap.set(metalKey, {
+          id: metalKey,
+          element,
+          resName,
+          chainId,
+          resNum,
+          x,
+          y,
+          z,
+          charge: element === 'MN' || element === 'MG' || element === 'ZN' || element === 'CA' ? 2 : 1,
+          atomIndex: atoms.length - 1,
+        })
+      }
+    }
+  }
+
+  chainsMap.forEach((c) => {
+    if (nucleicChains.has(c.id)) {
+      c.type = 'dna'
+      c.description = `DNA / Nucleic Acid Chain (${c.sequence.length} nt)`
+    } else {
+      c.type = 'protein'
+      c.description = `Protein Chain (${c.sequence.length} aa)`
+    }
+  })
+
+  const ligands = Array.from(ligandsMap.values()).map((lig) => {
+    const ref = BIOACTIVE_REFERENCE_LIBRARY.find((r) => r.id === lig.id)
+    return {
+      ...lig,
+      name: ref?.name || lig.id,
+      formula: ref?.formula || null,
+      formulaWeight: ref?.mw || null,
+      smiles: ref?.smiles || null,
+      atomCount: lig.atoms.length,
+    }
+  })
+
+  return {
+    metadata,
+    atoms,
+    chains: Array.from(chainsMap.values()),
+    residues: Array.from(residuesMap.values()),
+    ligands,
+    metalIons: Array.from(metalsMap.values()),
+    assemblies: [
+      { id: 'asym', name: 'Asymmetric Unit', stoichiometry: 'Deposited Coordinates' },
+    ],
+    totalAtoms: atoms.length,
+    totalResidues: residuesMap.size,
+    provenanceTiers: {
+      structure: '[USER UPLOADED STRUCTURE] Imported via macromolecular file upload',
+      properties: '[CALCULATED INFORMATION] Real-time 3D coordinates & pocket extraction',
+      annotations: '[DATABASE ANNOTATION] User-supplied metadata',
+      interpretation: '[AI INTERPRETATION] Aegis Structural Biology inference',
+    },
+  }
+}
+
+/**
+ * Parses FASTA formatted sequence text.
+ */
+export function parseFastaSequence(rawText) {
+  const lines = rawText.split(/\r?\n/)
+  let header = ''
+  let seq = ''
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+    if (trimmed.startsWith('>')) {
+      if (!header) header = trimmed.slice(1).trim()
+    } else {
+      seq += trimmed.replace(/\s+/g, '')
+    }
+  }
+  return { header: header || 'Custom Protein Sequence', sequence: seq.toUpperCase() }
+}
+
+/**
+ * Detects structural biology file format (.pdb, .cif/.mmcif, .fasta/.fa).
+ */
+export function detectStructureFormat(content, filename = '') {
+  const lowerName = filename.toLowerCase()
+  if (lowerName.endsWith('.cif') || lowerName.endsWith('.mmcif') || lowerName.endsWith('.bcif')) {
+    return 'mmcif'
+  }
+  if (lowerName.endsWith('.fa') || lowerName.endsWith('.fasta')) {
+    return 'fasta'
+  }
+  if (lowerName.endsWith('.pdb') || lowerName.endsWith('.ent')) {
+    return 'pdb'
+  }
+  const first1500 = (content || '').slice(0, 1500)
+  if (first1500.includes('data_') && (first1500.includes('_atom_site') || first1500.includes('_entry.id') || first1500.includes('_struct.'))) {
+    return 'mmcif'
+  }
+  if (first1500.startsWith('>')) {
+    return 'fasta'
+  }
+  const cleanTrimmed = first1500.trim()
+  if (cleanTrimmed && /^[ACDEFGHIKLMNPQRSTVWY\s\n\r]+$/i.test(cleanTrimmed) && !first1500.includes('ATOM') && !first1500.includes('HEADER')) {
+    const compact = cleanTrimmed.replace(/[\s\r\n]/g, '')
+    const words = cleanTrimmed.split(/\s+/)
+    const looksLikeEnglish = words.length > 2 && words.some((w) => w.length < 5)
+    if (compact.length >= 12 && !looksLikeEnglish) {
+      return 'fasta'
+    }
+  }
+  if (first1500.includes('ATOM  ') || first1500.includes('HETATM') || first1500.includes('HEADER ') || first1500.includes('TITLE ')) {
+    return 'pdb'
+  }
+  return 'unsupported'
+}
+
+/**
+ * Universal structure file parser handling PDB, mmCIF, and FASTA uploads.
+ */
+export function parseUploadedStructureFile(fileContent, fileName = 'uploaded_structure.pdb') {
+  const format = detectStructureFormat(fileContent, fileName)
+  if (format === 'pdb') {
+    const baseId = fileName.replace(/\.[^/.]+$/, '').toUpperCase().slice(0, 8) || 'UPLOADED'
+    const structure = parsePdbStructure(fileContent, baseId)
+    structure.metadata.source = 'User Upload (PDB)'
+    structure.metadata.badge = '[USER UPLOADED STRUCTURE]'
+    structure.provenanceTiers = {
+      structure: `[USER UPLOADED STRUCTURE] Imported from ${fileName}`,
+      properties: '[CALCULATED INFORMATION] Real-time 3D coordinates & pocket extraction',
+      annotations: '[DATABASE ANNOTATION] User-supplied metadata',
+      interpretation: '[AI INTERPRETATION] Aegis Structural Biology inference',
+    }
+    return structure
+  }
+  if (format === 'mmcif') {
+    const baseId = fileName.replace(/\.[^/.]+$/, '').toUpperCase().slice(0, 8) || 'UPLOADED'
+    const structure = parseMmCifStructure(fileContent, baseId)
+    structure.metadata.source = 'User Upload (mmCIF)'
+    structure.metadata.badge = '[USER UPLOADED STRUCTURE]'
+    return structure
+  }
+  if (format === 'fasta') {
+    const { header, sequence } = parseFastaSequence(fileContent)
+    const baseId = fileName.replace(/\.[^/.]+$/, '').toUpperCase().slice(0, 8) || 'FASTA_SEQ'
+    return {
+      metadata: {
+        structureId: baseId,
+        title: header || `FASTA Protein Sequence (${sequence.length} aa)`,
+        experimentalMethod: 'IN-SILICO SEQUENCE',
+        resolution: null,
+        organism: 'User-specified sequence',
+        source: 'FASTA File Upload',
+        badge: '[USER UPLOADED STRUCTURE]',
+      },
+      atoms: [],
+      chains: [
+        {
+          id: 'A',
+          type: 'protein',
+          description: header || 'Imported Sequence Chain A',
+          sequence,
+          residues: [],
+          atomIndices: [],
+        },
+      ],
+      residues: [],
+      ligands: [],
+      metalIons: [],
+      assemblies: [],
+      totalAtoms: 0,
+      totalResidues: sequence.length,
+      isSequenceOnly: true,
+      sequence,
+      provenanceTiers: {
+        structure: `[USER UPLOADED STRUCTURE] Imported from FASTA ${fileName}`,
+        properties: '[CALCULATED INFORMATION] Theoretical sequence biophysics',
+        annotations: '[DATABASE ANNOTATION] User sequence',
+        interpretation: '[AI INTERPRETATION] Aegis Structural Biology inference',
+      },
+    }
+  }
+  throw new Error(`Unsupported structure file format for "${fileName}". Supported formats: .pdb, .cif/.mmcif, .fasta/.fa`)
 }
 
 /**

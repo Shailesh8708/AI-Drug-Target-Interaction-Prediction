@@ -19,7 +19,6 @@ export default function LigandIntelligencePanel({
   activeLigand = null,
   onSelectLigand = () => {},
   onNavigateToComparison = () => {},
-  onNavigateToDrugIntel = () => {},
   learnMode = false,
   setNotice = () => {},
 }) {
@@ -74,22 +73,13 @@ export default function LigandIntelligencePanel({
         </div>
 
         <div className="toolbar-group">
-          {/* Bridge to Drug Intelligence Feature */}
-          <button
-            className="primary-button small accent-purple"
-            onClick={() => onNavigateToDrugIntel(currentLigand.name || currentLigand.id)}
-            title="Analyze in Drug Intelligence Platform"
-          >
-            <FlaskConical size={14} /> Analyze in Drug Intelligence
-          </button>
-
           {/* Bridge to Existing Structure Comparison Feature */}
           <button
             className="outline-button small"
             onClick={() => onNavigateToComparison(currentLigand.name || currentLigand.id)}
             title="Launch Structure Comparison with this ligand"
           >
-            <GitCompare size={14} /> Compare Ligand in Studio
+            <GitCompare size={14} /> Compare Ligand Structure
           </button>
         </div>
       </div>
