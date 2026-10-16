@@ -85,14 +85,21 @@ export default function BioStructure3DViewer({
   showPocket = false,
   showInteractions = true,
   cameraPreset = 'full',
+  autoSpin = false,
   onSelectResidue = () => {},
   onSelectLigand = () => {},
 }) {
   const hostRef = useRef(null)
+  const canvasContainerRef = useRef(null)
   const engineRef = useRef(null)
   const metricsRef = useRef({ cx: 0, cy: 0, cz: 0, maxRadius: 30, center: new THREE.Vector3(), visibleAtoms: [] })
   const interactiveDataRef = useRef({ pointsMesh: null, atoms: [] })
   const animFrameIdRef = useRef(null)
+  const autoSpinRef = useRef(autoSpin)
+
+  useEffect(() => {
+    autoSpinRef.current = autoSpin
+  }, [autoSpin])
 
   const onSelectResidueRef = useRef(onSelectResidue)
   const onSelectLigandRef = useRef(onSelectLigand)
@@ -202,7 +209,8 @@ export default function BioStructure3DViewer({
   // --------------------------------------------------------------------------
   useEffect(() => {
     const host = hostRef.current
-    if (!host) return undefined
+    const canvasContainer = canvasContainerRef.current
+    if (!host || !canvasContainer) return undefined
 
     if (!isWebGLAvailable()) {
       setHasWebglError(true)
@@ -229,7 +237,7 @@ export default function BioStructure3DViewer({
     const initialH = Math.max(host.clientHeight || 520, 200)
     renderer.setSize(initialW, initialH, false)
 
-    host.replaceChildren(renderer.domElement)
+    canvasContainer.replaceChildren(renderer.domElement)
     const canvas = renderer.domElement
 
     const scene = new THREE.Scene()
@@ -394,6 +402,9 @@ export default function BioStructure3DViewer({
     const animate = () => {
       if (!isRunning) return
       animFrameIdRef.current = requestAnimationFrame(animate)
+      if (autoSpinRef.current && !dragging) {
+        rootGroup.rotation.y += 0.005
+      }
       try {
         renderer.render(scene, camera)
       } catch (err) {
@@ -817,13 +828,21 @@ export default function BioStructure3DViewer({
 
       {/* 3D WebGL Canvas Host */}
       <div className="viewer-canvas-host" ref={hostRef}>
+        {/* Isolated Three.js Canvas Container: guarantees React never mutates Three.js canvas */}
+        <div
+          className="viewer-three-canvas-container"
+          ref={canvasContainerRef}
+          style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, overflow: 'hidden' }}
+        />
+
         {/* WebGL Context Lost Fallback Overlay */}
         {isContextLost && (
-          <div className="viewer-context-lost-overlay">
+          <div className="viewer-context-lost-overlay" style={{ position: 'relative', zIndex: 10 }}>
             <AlertCircle size={28} className="text-amber-400" />
             <h4>3D Graphics Context Paused</h4>
             <p>The WebGL context was suspended by your browser to free graphics memory.</p>
             <button
+              type="button"
               className="preset-btn active"
               onClick={() => setRebuildTrigger((c) => c + 1)}
             >
@@ -834,7 +853,7 @@ export default function BioStructure3DViewer({
 
         {/* WebGL Unsupported Fallback Overlay */}
         {hasWebglError && (
-          <div className="viewer-context-lost-overlay">
+          <div className="viewer-context-lost-overlay" style={{ position: 'relative', zIndex: 10 }}>
             <AlertCircle size={28} className="text-rose-400" />
             <h4>WebGL Hardware Acceleration Unavailable</h4>
             <p>
@@ -848,7 +867,7 @@ export default function BioStructure3DViewer({
         {hoveredInfo && (
           <div
             className="viewer-atom-tooltip"
-            style={{ left: hoveredInfo.x + 14, top: hoveredInfo.y - 14 }}
+            style={{ left: hoveredInfo.x + 14, top: hoveredInfo.y - 14, zIndex: 20 }}
           >
             <strong>
               {hoveredInfo.resName} {hoveredInfo.resNum} ({hoveredInfo.chainId})

@@ -19,6 +19,13 @@ import {
 import {
   formatBioStructureReport,
   PRESET_STRUCTURES,
+  calculateCrystallographicMetrics,
+  calculateSequenceMetrics,
+  calculateLigandPharmacophore,
+  EC_MECHANISM_CATALOG,
+  isSyntheticFallbackPdb,
+  generateFallbackPdbText,
+  loadCompleteBioStructure,
 } from '../src/services/bioStructureService.js'
 import {
   searchAdvancedBiostructures,
@@ -387,4 +394,127 @@ test('BioStructure: Offline resilience parses all 10 local repository PDB struct
     }
   }
 })
+
+test('BioStructure: Calculates PhD-level biophysical, crystallographic, and enzymatic catalytic metrics', async () => {
+  // Test crystallographic metrics
+  const unitCell = { a: 88.98, b: 123.17, c: 170.42, alpha: 90, beta: 90.25, gamma: 90, z: 4 }
+  const crystallo = calculateCrystallographicMetrics({
+    unitCell,
+    resolution: 2.0,
+    rWork: 0.184,
+    rFree: 0.226,
+    totalAtoms: 4500,
+    molWeightKDa: 95.4,
+    spaceGroup: 'P 1 21 1',
+  })
+
+  assert.ok(crystallo.volume > 1000000, 'Unit cell volume must be > 1,000,000 Å³')
+  assert.ok(crystallo.matthewsCoeff >= 1.7 && crystallo.matthewsCoeff <= 3.5, 'Matthews coefficient in valid range')
+  assert.ok(crystallo.solventPercent >= 30 && crystallo.solventPercent <= 75, 'Solvent percent in valid protein range')
+  assert.equal(crystallo.deltaR, 0.042, 'Delta R should equal rFree - rWork')
+  assert.equal(crystallo.crystalSystem, 'Monoclinic', 'P 1 21 1 should be Monoclinic')
+  assert.ok(crystallo.luzzatiError > 0 && crystallo.luzzatiError < 0.5, 'Luzzati coordinate error in valid Å range')
+
+  // Test sequence biophysical metrics
+  const testSeq = 'MKWVTFISLLFLFSSAYSRGVFRRDTHKSEIAHRFKDLGEEHFKGLVLIAFSQYLQQCPFDEHVKLVNELTEFAKTCVADESHAGCEKSLHTLFGDELCKVASLRETYGDMADCCEKQEPERNECFLSHKDDSPDLPKLKPDPNTLCDEFKADEKKFWGKYLYEIARRHPYFYAPELLYYANKYNGVFQECCQAEDKGACLLPKIETMREKVLTSSARQRLRCASIQKFGERALKAWSVARLSQKFPKAEFVEVTKLVTDLTKVHKECCHGDLLECADDRADLAKYICDNQDTISSKLKECCDKPLLEKSHCIAEVEKDAIPENLPPLTADFAEDKDVCKNYQEAKDAFLGSFLYEYSRRHPEYAVSVLLRLAKEYEATLEECCAKDDPHACYSTVFDKLKHLVDEPQNLIKQNCDQFEKLGEYGFQNALIVRYTRKVPQVSTPTLVEVSRSLGKVGTRCCTKPESERMPCTEDYLSLILNRLCVLHEKTPVSEKVTKCCTESLVNRRPCFSALTPDETYVPKAFDEKLFTFHADICTLPDTEKQIKKQTALVELLKHKPKATEEQLKTVMENFVAFVDKCCAADDKEACFAVEGPKLVVSTQTALA'
+  const seqMetrics = calculateSequenceMetrics(testSeq)
+
+  assert.ok(seqMetrics, 'Should compute sequence metrics')
+  assert.ok(seqMetrics.theoreticalPi > 4.5 && seqMetrics.theoreticalPi < 7.5, 'Human serum albumin pI should be around 5.0 - 6.5')
+  assert.ok(Number.isFinite(seqMetrics.chargeAtPh74), 'Net charge at pH 7.4 must be finite')
+  assert.ok(seqMetrics.extinctionCoefficient > 20000, 'Albumin extinction coeff should be substantial')
+  assert.ok(seqMetrics.aliphaticIndex > 50, 'Aliphatic index must be > 50')
+  assert.ok(seqMetrics.composition.cysteineCount > 10, 'Albumin has multiple cysteines')
+
+  // Test ligand pharmacophore and LE
+  const ligand = { id: 'CPF', formula: 'C17H18FN3O3', formulaWeight: 331.34, atomCount: 24 }
+  const pocketData = {
+    contactResidues: [{ name: 'ARG', resSeq: 122 }, { name: 'TYR', resSeq: 123 }],
+    interactions: [{ type: 'hbond' }, { type: 'hbond' }, { type: 'hydrophobic' }],
+  }
+  const pharma = calculateLigandPharmacophore(ligand, pocketData)
+
+  assert.ok(pharma.ligandEfficiency > 0.25, 'Ligand efficiency should be > 0.25 kcal/mol/atom')
+  assert.ok(pharma.lle > 4.0, 'Lipophilic ligand efficiency should be > 4.0')
+  assert.equal(pharma.ro5Violations, 0, 'Ciprofloxacin satisfies Lipinski Rule of 5')
+
+  // Test EC mechanism catalog
+  assert.ok(EC_MECHANISM_CATALOG['2XCT'], '2XCT must exist in catalog')
+  assert.equal(EC_MECHANISM_CATALOG['2XCT'].ec, 'EC 5.99.1.3')
+  assert.ok(EC_MECHANISM_CATALOG['2XCT'].catalyticResidues.some((r) => r.residue === 'TYR'))
+
+  assert.ok(EC_MECHANISM_CATALOG['1IEP'], '1IEP must exist in catalog')
+  assert.equal(EC_MECHANISM_CATALOG['1IEP'].ec, 'EC 2.7.10.2')
+
+  assert.ok(EC_MECHANISM_CATALOG['6LU7'], '6LU7 must exist in catalog')
+  assert.equal(EC_MECHANISM_CATALOG['6LU7'].ec, 'EC 3.4.22.69')
+})
+
+test('BioStructure: Stability resilience on string/malformed crystallographic metrics and null inputs', async () => {
+  // Test with string unit cell values and strings for rWork and rFree
+  const stringUnitCell = { a: '88.98', b: '123.17', c: '170.42', alpha: '90.0', beta: '90.25', gamma: '90.0', z: '4' }
+  const crystallo = calculateCrystallographicMetrics({
+    unitCell: stringUnitCell,
+    resolution: '2.0',
+    rWork: '0.184',
+    rFree: '0.226',
+    totalAtoms: '4500',
+    molWeightKDa: '95.4',
+    spaceGroup: 'P 1 21 1',
+  })
+
+  assert.ok(crystallo.volume > 0, 'Volume must be calculated correctly from string numbers')
+  assert.equal(crystallo.crystalSystem, 'Monoclinic')
+  assert.ok(Number.isFinite(crystallo.matthewsCoeff))
+  assert.ok(Number.isFinite(crystallo.solventPercent))
+
+  // Test empty parameters fallback
+  const emptyCrystallo = calculateCrystallographicMetrics({})
+  assert.ok(emptyCrystallo.volume > 0, 'Default parameters should provide valid volume')
+  assert.ok(Number.isFinite(emptyCrystallo.deltaR))
+
+  // Test null ligand pharmacophore
+  assert.equal(calculateLigandPharmacophore(null), null)
+  assert.equal(calculateLigandPharmacophore(undefined), null)
+})
+
+test('BioStructure: Authentic PDB coordinates preservation and dummy fallback rejection', async () => {
+  // Test fallback detector
+  const dummy = generateFallbackPdbText('1M17')
+  assert.equal(isSyntheticFallbackPdb(dummy), true, 'Synthetic fallback must be identified as synthetic')
+
+  // Verify that real structure files on disk are authentic, large, and not synthetic
+  const authenticIds = ['1M17', '6LU7', '6VXX', '1IEP', '1AO6', '1PTH', '3EML', '1MBO', '1LYZ', '4HHB', '4INS']
+  for (const pdbId of authenticIds) {
+    const s = await getStructureData(pdbId)
+    assert.ok(s.atoms && s.atoms.length >= 1000, `${pdbId} must have authentic atom count (>=1000 atoms), found ${s.atoms?.length}`)
+    assert.ok(s.chains && s.chains.length >= 1, `${pdbId} must have at least 1 chain`)
+    assert.ok(s.metadata && s.metadata.title, `${pdbId} must have title metadata`)
+  }
+
+  // Specifically check EGFR (1M17) and COVID Mpro (6LU7)
+  const egfr = await getStructureData('1M17')
+  assert.ok(egfr.atoms.length > 2000, 'EGFR 1M17 should have >2000 atoms')
+  assert.match(egfr.metadata.title, /EPIDERMAL GROWTH FACTOR/i)
+
+  const mpro = await getStructureData('6LU7')
+  assert.ok(mpro.atoms.length > 2000, 'COVID-19 Mpro 6LU7 should have >2000 atoms')
+  assert.match(mpro.metadata.title, /COVID-19|PROTEASE/i)
+})
+
+test('BioStructure: loadCompleteBioStructure returns authentic full coordinates and resolves names', async () => {
+  const targets = ['1M17', '4INS', '4HHB', '6LU7', 'Insulin', 'Hemoglobin', 'p53']
+  for (const q of targets) {
+    const res = await loadCompleteBioStructure(q)
+    assert.ok(res.structure, `${q} must return a structure object`)
+    assert.ok(
+      res.structure.atoms && res.structure.atoms.length >= 1000,
+      `${q} must have authentic >=1000 atoms, got ${res.structure.atoms?.length}`
+    )
+    assert.notEqual(res.structure.atoms.length, 363, `${q} must not be the 363-atom synthetic fallback`)
+    assert.ok(res.structure.chains && res.structure.chains.length >= 1, `${q} must have at least 1 chain`)
+  }
+})
+
+
 

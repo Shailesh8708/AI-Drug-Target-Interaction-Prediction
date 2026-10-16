@@ -461,20 +461,20 @@ export default function StructureSearchHeader({
               {showDropdown && candidates.length > 0 && (
                 <div className="search-candidates-dropdown glass-card">
                   <div className="dropdown-header">
-                    <span>Matching Structures & UniProt Entries ({candidates.length})</span>
-                    <span className="source-label">wwPDB / UniProtKB</span>
+                    <span>Matching Structures & Bioactive Molecules ({candidates.length})</span>
+                    <span className="source-label">wwPDB / Chemical Components</span>
                   </div>
                   <div className="candidates-list">
                     {candidates.map((cand) => (
                       <div
                         key={cand.id + cand.name}
-                        className="candidate-row"
+                        className={`candidate-row ${cand.entityType === 'LIGAND' ? 'candidate-ligand' : ''}`}
                         onClick={() => handleSelectCandidate(cand)}
                       >
                         <div className="candidate-primary">
                           <strong className="cand-name">{cand.name}</strong>
-                          <span className="cand-id-badge">
-                            {cand.pdbId ? `PDB: ${cand.pdbId}` : `UniProt: ${cand.uniprotId}`}
+                          <span className={`cand-id-badge ${cand.entityType === 'LIGAND' ? 'ligand-badge' : ''}`}>
+                            {cand.entityType === 'LIGAND' ? `Ligand: ${cand.id}` : (cand.pdbId ? `PDB: ${cand.pdbId}` : `UniProt: ${cand.uniprotId}`)}
                           </span>
                         </div>
                         <div className="candidate-secondary">

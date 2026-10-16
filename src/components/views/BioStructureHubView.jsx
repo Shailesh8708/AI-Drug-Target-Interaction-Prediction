@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Dna,
   Atom,
@@ -50,10 +50,12 @@ import DTIContextTimeline from '../biostructure/DTIContextTimeline.jsx'
 import StructureReportModal from '../biostructure/StructureReportModal.jsx'
 import ProteinSequenceAnalysisPanel from '../biostructure/ProteinSequenceAnalysisPanel.jsx'
 import ProteinFunctionalDomainsPanel from '../biostructure/ProteinFunctionalDomainsPanel.jsx'
+import RcsbStructureSummary from '../biostructure/RcsbStructureSummary.jsx'
 import '../biostructure/biostructure.css'
 
 const TABS = [
   { id: 'overview', label: 'Overview & 3D', icon: Layers },
+  { id: 'rcsb', label: 'RCSB Structure Summary', icon: ShieldCheck, badge: 'Official' },
   { id: 'sequence', label: 'Sequence & Biophysics', icon: Dna, badge: 'Analytics' },
   { id: 'domains', label: 'Functional Domains', icon: Sparkles, badge: 'UniProt' },
   { id: 'pocket', label: 'Binding Site Intelligence', icon: Flame, badge: 'Signature' },
@@ -91,6 +93,7 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
   const [showPocket, setShowPocket] = useState(true)
   const [showInteractions, setShowInteractions] = useState(true)
   const [cameraPreset, setCameraPreset] = useState('full')
+  const [autoSpin, setAutoSpin] = useState(false)
 
   // Advanced interactive modes
   const [presentationMode, setPresentationMode] = useState(false)
@@ -98,19 +101,34 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
   const [storyMode, setStoryMode] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
 
-  // Load structure data
+  const loadRequestIdRef = useRef(0)
+  const hasInitialLoadedRef = useRef(false)
+
+  // Load structure data with monotonic request tracking to discard stale out-of-order responses
   const loadStructureData = useCallback(async (queryOrId) => {
+    const reqId = ++loadRequestIdRef.current
     setIsLoading(true)
     setErrorMessage(null)
     try {
       const data = await loadCompleteBioStructure(queryOrId, '', 4.5)
-      setStructure(data.structure)
+      if (reqId !== loadRequestIdRef.current) return
+
+      setStructure((prev) => {
+        const incomingAtoms = data.structure?.atoms?.length || 0
+        const prevAtoms = prev?.atoms?.length || 0
+        if (incomingAtoms <= 365 && prevAtoms > 500) {
+          console.warn(`[BioStructure] Retaining active authentic structure (${prevAtoms} atoms) over synthetic fallback.`)
+          return prev
+        }
+        return data.structure
+      })
       setPocketData(data.pocketData)
       setInterpretation(data.interpretation)
       setUniversalProtein(data.universalProtein)
 
-      if (data.structure?.metadata?.structureId) {
-        setCurrentPdbId(data.structure.metadata.structureId)
+      const cleanId = data.structure?.metadata?.structureId || queryOrId
+      if (cleanId) {
+        setCurrentPdbId(cleanId)
       }
 
       // Set active ligand if available
@@ -120,20 +138,32 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
       // Load similar molecules for the primary ligand
       try {
         const sim = await getSimilarMolecules(primaryLigand, 0.6)
-        setSimilarMolecules(sim)
+        if (reqId === loadRequestIdRef.current) {
+          setSimilarMolecules(sim)
+        }
       } catch {
-        setSimilarMolecules([])
+        if (reqId === loadRequestIdRef.current) {
+          setSimilarMolecules([])
+        }
       }
     } catch (err) {
-      setErrorMessage(`Failed to resolve structure for "${queryOrId}": ${err.message || 'Unknown error'}`)
+      if (reqId === loadRequestIdRef.current) {
+        setErrorMessage(`Failed to resolve structure for "${queryOrId}": ${err.message || 'Unknown error'}`)
+      }
     } finally {
-      setIsLoading(false)
+      if (reqId === loadRequestIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [])
 
+  // Initial load on mount only to prevent cyclic re-triggering on currentPdbId updates
   useEffect(() => {
-    loadStructureData(currentPdbId)
-  }, [currentPdbId, loadStructureData])
+    if (!hasInitialLoadedRef.current) {
+      hasInitialLoadedRef.current = true
+      loadStructureData('2XCT')
+    }
+  }, [loadStructureData])
 
   // Recalculate pocket when cutoff changes
   const handleCutoffChange = async (newCutoff) => {
@@ -151,16 +181,20 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
 
   // Handle Multi-Tab Advanced Search
   const handleAdvancedSearch = async ({ query, searchType: sType }) => {
-    setIsLoading(true)
     setErrorMessage(null)
     setSearchQuery(query)
     setSearchType(sType)
     try {
+      setIsLoading(true)
       const data = await searchAdvancedBiostructures({ query, searchType: sType })
       setSearchResults(data)
       setNotice(`Identified ${data.totalCount || data.results?.length || 0} candidate(s) for "${query}".`)
-      if (data.results?.length === 1 && data.results[0].pdbId) {
-        loadStructureData(data.results[0].pdbId)
+      const topMatch = data.results?.[0]
+      const targetPdbId = topMatch?.pdbId || topMatch?.id
+      if (targetPdbId) {
+        await loadStructureData(targetPdbId)
+      } else if (/^[0-9][A-Za-z0-9]{3}$/i.test(query.trim())) {
+        await loadStructureData(query.trim().toUpperCase())
       }
     } catch (err) {
       setErrorMessage(`Search error: ${err.message}`)
@@ -171,6 +205,7 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
 
   // Handle Custom Structure File Upload
   const handleFileUpload = (parsedStructure, fileName) => {
+    loadRequestIdRef.current++
     setNotice(`Imported custom structure "${fileName}" with coordinates into 3D workspace.`)
     setStructure(parsedStructure)
     setSearchResults(null)
@@ -182,6 +217,7 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
       setSelectedLigandId(primaryLigand)
     }
     setErrorMessage(null)
+    setIsLoading(false)
     setActiveTab('overview')
   }
 
@@ -221,7 +257,13 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
   const primaryLigand = structure?.ligands?.find((l) => l.id === selectedLigandId) || structure?.ligands?.[0] || null
 
   return (
-    <div className={`page-wrap biostructure-hub-shell ${presentationMode ? 'presentation-active' : ''}`}>
+    <BioStructureErrorBoundary
+      title="BioStructure Intelligence Hub"
+      description="The structural biology intelligence workstation encountered an issue."
+      buttonText="Restore Hub"
+      onReset={() => loadStructureData(currentPdbId || '2XCT')}
+    >
+      <div className={`page-wrap biostructure-hub-shell ${presentationMode ? 'presentation-active' : ''}`}>
       {/* Header with Search, Presets and Mode Toggles */}
       <StructureSearchHeader
         currentPdbId={currentPdbId}
@@ -260,10 +302,11 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
           searchType={searchType}
           unmatchedMessage={searchResults.unmatchedMessage}
           currentPdbId={currentPdbId}
-          onSelectStructure={(pdbId) => {
-            setCurrentPdbId(pdbId)
+          onSelectStructure={(pdbId, candidate) => {
             loadStructureData(pdbId)
-            setSearchResults(null)
+            if (candidate?.ligandId) {
+              setSelectedLigandId(candidate.ligandId)
+            }
           }}
           onOpenUpload={() => {
             setNotice('Please select the "Upload Structure" tab in the search header above.')
@@ -340,6 +383,16 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
               />
               <span>Contact Vectors</span>
             </label>
+            <label className="toggle-chip">
+              <input
+                type="checkbox"
+                checked={autoSpin}
+                onChange={(e) => setAutoSpin(e.target.checked)}
+              />
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                <RotateCcw size={11} /> Auto Spin
+              </span>
+            </label>
             <button
               className="outline-button small"
               onClick={() => setShowReportModal(true)}
@@ -362,6 +415,7 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
             showPocket={showPocket}
             showInteractions={showInteractions}
             cameraPreset={cameraPreset}
+            autoSpin={autoSpin}
             onSelectResidue={(resId) => {
               setSelectedResidueId(String(resId))
               setNotice(`Inspecting residue ${resId}`)
@@ -472,7 +526,34 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
                   </div>
                 </div>
               </div>
+
+              {/* Official RCSB PDB Structure Summary Showcase */}
+              <RcsbStructureSummary
+                structure={structure}
+                universalProtein={universalProtein}
+                pocketData={pocketData}
+                onSelectLigand={(ligId) => {
+                  setSelectedLigandId(ligId)
+                  setCameraPreset('ligand')
+                  setNotice(`Focused ligand ${ligId} in 3D viewer`)
+                }}
+                setNotice={setNotice}
+              />
             </div>
+          )}
+
+          {activeTab === 'rcsb' && (
+            <RcsbStructureSummary
+              structure={structure}
+              universalProtein={universalProtein}
+              pocketData={pocketData}
+              onSelectLigand={(ligId) => {
+                setSelectedLigandId(ligId)
+                setCameraPreset('ligand')
+                setNotice(`Focused ligand ${ligId} in 3D viewer`)
+              }}
+              setNotice={setNotice}
+            />
           )}
 
           {activeTab === 'sequence' && (
@@ -609,5 +690,6 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
         />
       )}
     </div>
+    </BioStructureErrorBoundary>
   )
 }

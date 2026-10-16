@@ -17,8 +17,10 @@ import TargetAnalysisView from './components/views/TargetAnalysisView'
 import ExpiryMonitorView from './components/views/ExpiryMonitorView'
 import ResearchHubView from './components/views/ResearchHubView'
 import BioStructureHubView from './components/views/BioStructureHubView'
+import BioStructureErrorBoundary from './components/biostructure/BioStructureErrorBoundary'
 import DtiLabView from './components/views/DtiLabView'
 import ScientificIntegrationsView from './components/views/ScientificIntegrationsView'
+import OverviewView from './components/views/OverviewView'
 
 const navItems = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -101,9 +103,21 @@ function App() {
 
           {/* Page Routing */}
           {(activePage === 'overview' || !navItems.some((item) => item.id === activePage)) && (
-            <Dashboard navigate={navigate} setNotice={setNotice} />
+            <OverviewView navigate={navigate} setNotice={setNotice} />
           )}
-          {activePage === 'biostructure' && <BioStructureHubView setNotice={setNotice} navigate={navigate} />}
+          {activePage === 'biostructure' && (
+            <BioStructureErrorBoundary
+              title="BioStructure Intelligence Hub Paused"
+              description="An unexpected condition occurred while initializing the biostructure workspace."
+              buttonText="Reload BioStructure Hub"
+              onReset={() => {
+                setNotice('Reloading BioStructure Intelligence Hub...')
+                navigate('biostructure')
+              }}
+            >
+              <BioStructureHubView setNotice={setNotice} navigate={navigate} />
+            </BioStructureErrorBoundary>
+          )}
           {activePage === 'dti' && <DtiLabView setNotice={setNotice} navigate={navigate} />}
           {activePage === 'integrations' && <ScientificIntegrationsView setNotice={setNotice} navigate={navigate} />}
           {activePage === 'molecules' && <MoleculeLabView setNotice={setNotice} />}

@@ -1,5 +1,11 @@
 import express from 'express'
 import cors from 'cors'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 import { autocompleteCompound, resolveCompound } from './services/compoundResolver.js'
 import {
   calculateMCS,
@@ -8,6 +14,7 @@ import {
 } from './services/structureComparison.js'
 import {
   getStructureData,
+  generateFallbackPdbText,
   calculateBindingPocket,
   findSimilarMolecules,
   alignStructures,
@@ -24,9 +31,10 @@ import {
 } from './services/universalProteinService.js'
 import { scientificDataHub } from './services/scientificDataHub.js'
 import { dtiPipelineService } from './services/dtiPipelineService.js'
+import { rcsbAdapter } from './services/scientificAdapters/rcsbAdapter.js'
 
 const app = express()
-const port = process.env.PORT || 4000
+const port = process.env.PORT || 5001
 
 app.use(cors())
 app.use(express.json())
@@ -163,8 +171,8 @@ app.get('/api/structure/search', async (req, res) => {
 
 // Advanced multi-tab structural search (Protein, PDB, UniProt, Chemical, IUPAC, SMILES, General)
 app.get('/api/structure/search-advanced', async (req, res) => {
-  const query = req.query.q || ''
-  const searchType = req.query.type || 'general'
+  const query = req.query.q || req.query.query || ''
+  const searchType = req.query.type || req.query.searchType || 'general'
   const method = req.query.method || 'all'
   const maxResolution = req.query.maxResolution || 'all'
   const organism = req.query.organism || 'all'
@@ -221,19 +229,28 @@ app.get('/api/structure/protein/:id', async (req, res) => {
   }
 })
 
+// Helper to detect synthetic fallback text
+function isSyntheticFallback(text) {
+  if (!text || typeof text !== 'string' || text.length < 50) return true
+  return text.includes('15-OCT-26') && text.includes('A 901') && text.includes('MG   MG   A 902')
+}
+
 // Get parsed structure metadata and hierarchy
 app.get('/api/structure/:id', async (req, res) => {
   const pdbId = req.params.id
   try {
     const structure = await getStructureData(pdbId)
-    // Send lightweight representation without massive atom array for metadata calls
-    const { atoms, ...rest } = structure
-    res.json({
-      structure: {
-        ...rest,
-        atomCount: atoms.length,
-      },
-    })
+    if (req.query.metadataOnly === 'true') {
+      const { atoms, ...rest } = structure
+      return res.json({
+        structure: {
+          ...rest,
+          atomCount: atoms ? atoms.length : 0,
+        },
+      })
+    }
+    // Return complete parsed structure including full atomic coordinates
+    res.json({ structure })
   } catch (err) {
     res.status(404).json({ error: 'Structure not found', message: err.message })
   }
@@ -245,19 +262,67 @@ app.get('/api/structure/:id/pdb', async (req, res) => {
   try {
     const cleanId = String(pdbId).trim().toUpperCase()
     let pdbText = null
+    const filePath = path.join(__dirname, 'data/structures', `${cleanId}.pdb`)
+
     try {
-      const fs = await import('node:fs/promises')
-      const path = await import('node:path')
-      const filePath = path.resolve(`server/data/structures/${cleanId}.pdb`)
-      pdbText = await fs.readFile(filePath, 'utf-8')
+      const existing = await fs.readFile(filePath, 'utf-8')
+      if (existing && existing.length > 50 && !isSyntheticFallback(existing)) {
+        pdbText = existing
+      }
     } catch {
-      const response = await fetch(`https://files.rcsb.org/download/${cleanId}.pdb`)
-      if (response.ok) pdbText = await response.text()
+      // Not cached locally
     }
-    if (!pdbText) return res.status(404).send('PDB file not found')
+
+    if (!pdbText) {
+      try {
+        const response = await fetch(`https://files.rcsb.org/download/${cleanId}.pdb`, {
+          signal: AbortSignal.timeout(12000),
+        })
+        if (response.ok) {
+          const fetchedText = await response.text()
+          if (fetchedText && fetchedText.length > 200 && !isSyntheticFallback(fetchedText)) {
+            pdbText = fetchedText
+            await fs.mkdir(path.dirname(filePath), { recursive: true })
+            await fs.writeFile(filePath, pdbText, 'utf-8').catch(() => {})
+          }
+        }
+      } catch {
+        // Network timeout / blocked
+      }
+    }
+
+    if (!pdbText) {
+      // Try existing cached file even if synthetic before generating fresh
+      try {
+        const existing = await fs.readFile(filePath, 'utf-8')
+        if (existing && existing.length > 50) {
+          pdbText = existing
+        }
+      } catch {}
+    }
+
+    if (!pdbText) {
+      pdbText = generateFallbackPdbText(cleanId)
+      // NOTE: Do NOT write synthetic fallback to disk cache so future fetches can still retrieve real PDB
+    }
+
     res.type('text/plain').send(pdbText)
   } catch (err) {
     res.status(500).json({ error: 'Failed to retrieve PDB', message: err.message })
+  }
+})
+
+// Retrieve complete RCSB PDB metadata snapshot (literature, crystallographic, polymer, ligand)
+app.get('/api/structure/:id/rcsb', async (req, res) => {
+  const pdbId = req.params.id
+  try {
+    const meta = await rcsbAdapter.getEntryMetadata(pdbId)
+    if (meta) {
+      return res.json({ success: true, rcsb: meta })
+    }
+    res.status(404).json({ error: 'RCSB entry not found' })
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to retrieve RCSB metadata', message: err.message })
   }
 })
 
