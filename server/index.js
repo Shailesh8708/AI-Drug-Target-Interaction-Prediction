@@ -229,10 +229,27 @@ app.get('/api/structure/protein/:id', async (req, res) => {
   }
 })
 
-// Helper to detect synthetic fallback text
+// Helper to validate genuine PDB text
+function isValidPdbText(text) {
+  if (!text || typeof text !== 'string' || text.length < 100) return false
+  const trimmed = text.trim()
+  if (
+    trimmed.startsWith('<') ||
+    trimmed.startsWith('{') ||
+    trimmed.startsWith('[') ||
+    trimmed.includes('<!DOCTYPE') ||
+    trimmed.includes('<html') ||
+    trimmed.includes('{"error"') ||
+    trimmed.includes('{"message"')
+  ) {
+    return false
+  }
+  if (text.includes('15-OCT-26') && text.includes('A 901') && text.includes('MG   MG   A 902')) return false
+  return /(?:^|\n)(?:ATOM  |HETATM|HEADER)/m.test(text)
+}
+
 function isSyntheticFallback(text) {
-  if (!text || typeof text !== 'string' || text.length < 50) return true
-  return text.includes('15-OCT-26') && text.includes('A 901') && text.includes('MG   MG   A 902')
+  return !isValidPdbText(text)
 }
 
 // Get parsed structure metadata and hierarchy
@@ -266,7 +283,7 @@ app.get('/api/structure/:id/pdb', async (req, res) => {
 
     try {
       const existing = await fs.readFile(filePath, 'utf-8')
-      if (existing && existing.length > 50 && !isSyntheticFallback(existing)) {
+      if (isValidPdbText(existing)) {
         pdbText = existing
       }
     } catch {
@@ -280,7 +297,7 @@ app.get('/api/structure/:id/pdb', async (req, res) => {
         })
         if (response.ok) {
           const fetchedText = await response.text()
-          if (fetchedText && fetchedText.length > 200 && !isSyntheticFallback(fetchedText)) {
+          if (isValidPdbText(fetchedText)) {
             pdbText = fetchedText
             await fs.mkdir(path.dirname(filePath), { recursive: true })
             await fs.writeFile(filePath, pdbText, 'utf-8').catch(() => {})

@@ -35,6 +35,26 @@ const ELEMENT_COLORS = {
 }
 
 /**
+ * Creates a 3D cylinder mesh representing a chemical bond between two 3D points.
+ */
+function createBondCylinder(p1, p2, radius, color) {
+  const dir = new THREE.Vector3().subVectors(p2, p1)
+  const len = dir.length()
+  if (len < 0.1 || !Number.isFinite(len)) return null
+  const geo = new THREE.CylinderGeometry(radius, radius, len, 8, 1, false)
+  const mat = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(color),
+    roughness: 0.35,
+    metalness: 0.2,
+  })
+  const mesh = new THREE.Mesh(geo, mat)
+  const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5)
+  mesh.position.copy(mid)
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize())
+  return mesh
+}
+
+/**
  * Safely dispose all geometries, materials, and children in a Three.js hierarchy.
  */
 function disposeHierarchy(node) {
@@ -93,6 +113,8 @@ export default function BioStructure3DViewer({
   const canvasContainerRef = useRef(null)
   const engineRef = useRef(null)
   const metricsRef = useRef({ cx: 0, cy: 0, cz: 0, maxRadius: 30, center: new THREE.Vector3(), visibleAtoms: [] })
+  const cameraTargetRef = useRef(new THREE.Vector3(0, 0, 0))
+  const lastStructureKeyRef = useRef(null)
   const interactiveDataRef = useRef({ pointsMesh: null, atoms: [] })
   const animFrameIdRef = useRef(null)
   const autoSpinRef = useRef(autoSpin)
@@ -135,59 +157,75 @@ export default function BioStructure3DViewer({
     if (!engine) return
 
     const { rootGroup, camera } = engine
-    const { cx, cy, cz, maxRadius, visibleAtoms } = metricsRef.current
-    if (!visibleAtoms || !visibleAtoms.length) return
+    const { cx, cy, cz, maxRadius } = metricsRef.current
+    const atoms = structure?.atoms || []
+    if (!atoms.length) return
 
     if (preset === 'full') {
       rootGroup.rotation.set(0, 0, 0)
+      cameraTargetRef.current.set(0, 0, 0)
       camera.position.set(0, 0, maxRadius * 2.2)
       camera.lookAt(0, 0, 0)
     } else if (preset === 'ligand' || preset === 'pocket') {
-      const ligAtoms = visibleAtoms.filter(
+      const ligAtoms = atoms.filter(
         (a) => a.record === 'HETATM' && !a.isWater && !a.isMetal && !a.isNucleic
       )
       if (ligAtoms.length) {
+        setShowLigands(true)
         const lx = ligAtoms.reduce((s, a) => s + a.x, 0) / ligAtoms.length - cx
         const ly = ligAtoms.reduce((s, a) => s + a.y, 0) / ligAtoms.length - cy
         const lz = ligAtoms.reduce((s, a) => s + a.z, 0) / ligAtoms.length - cz
+        cameraTargetRef.current.set(lx, ly, lz)
         camera.position.set(lx, ly, lz + (preset === 'ligand' ? 16 : 26))
-        camera.lookAt(lx, ly, lz)
+        camera.lookAt(cameraTargetRef.current)
       }
     } else if (preset === 'dna') {
-      const dnaAtoms = visibleAtoms.filter((a) => a.isNucleic)
+      const dnaAtoms = atoms.filter((a) => a.isNucleic)
       if (dnaAtoms.length) {
+        setShowDna(true)
         const dx = dnaAtoms.reduce((s, a) => s + a.x, 0) / dnaAtoms.length - cx
         const dy = dnaAtoms.reduce((s, a) => s + a.y, 0) / dnaAtoms.length - cy
         const dz = dnaAtoms.reduce((s, a) => s + a.z, 0) / dnaAtoms.length - cz
+        cameraTargetRef.current.set(dx, dy, dz)
         camera.position.set(dx, dy, dz + 38)
-        camera.lookAt(dx, dy, dz)
+        camera.lookAt(cameraTargetRef.current)
       }
     } else if (preset === 'protein') {
+      setShowProtein(true)
       rootGroup.rotation.set(0.4, 0.7, 0)
+      cameraTargetRef.current.set(0, 0, 0)
       camera.position.set(0, 0, maxRadius * 2.0)
       camera.lookAt(0, 0, 0)
     }
-  }, [])
+  }, [structure])
 
-  // Zoom control
+  // Zoom control (smooth distance scaling relative to camera target)
   const handleZoom = (factor) => {
     const engine = engineRef.current
     if (!engine) return
+    const { camera } = engine
     const radius = metricsRef.current.maxRadius || 30
-    const minZ = radius * 0.4
-    const maxZ = radius * 6.5
-    engine.camera.position.z = Math.min(
-      maxZ,
-      Math.max(minZ, engine.camera.position.z * factor)
-    )
+    const target = cameraTargetRef.current || new THREE.Vector3(0, 0, 0)
+    const offset = new THREE.Vector3().subVectors(camera.position, target)
+    const currentDist = offset.length()
+    const minDist = Math.min(radius * 0.15, 3.0)
+    const maxDist = radius * 8.0
+    const newDist = Math.min(maxDist, Math.max(minDist, currentDist * factor))
+    if (currentDist > 0.001) {
+      offset.normalize().multiplyScalar(newDist)
+      camera.position.copy(target).add(offset)
+    } else {
+      camera.position.set(target.x, target.y, target.z + newDist)
+    }
   }
 
-  // Reset view orientation
+  // Reset view orientation & zoom
   const handleResetView = () => {
     const engine = engineRef.current
     if (!engine) return
     engine.rootGroup.rotation.set(0, 0, 0)
     const radius = metricsRef.current.maxRadius || 30
+    cameraTargetRef.current.set(0, 0, 0)
     engine.camera.position.set(0, 0, radius * 2.2)
     engine.camera.lookAt(0, 0, 0)
     setActivePreset('full')
@@ -292,8 +330,16 @@ export default function BioStructure3DViewer({
     const raycaster = new THREE.Raycaster()
     const pointer = new THREE.Vector2()
 
+    let isPanning = false
     const onPointerDown = (e) => {
+      if (e.button === 2 || (e.button === 0 && e.shiftKey)) {
+        isPanning = true
+        dragging = true
+        previousMouse = { x: e.clientX, y: e.clientY }
+        return
+      }
       if (e.button !== 0 && e.button !== 1) return
+      isPanning = false
       dragging = true
       previousMouse = { x: e.clientX, y: e.clientY }
     }
@@ -302,8 +348,18 @@ export default function BioStructure3DViewer({
       if (dragging) {
         const dx = e.clientX - previousMouse.x
         const dy = e.clientY - previousMouse.y
-        rootGroup.rotation.y += dx * 0.007
-        rootGroup.rotation.x += dy * 0.007
+        if (isPanning) {
+          const panSpeed = Math.max((metricsRef.current.maxRadius || 30) * 0.0018, 0.04)
+          const panX = -dx * panSpeed
+          const panY = dy * panSpeed
+          camera.position.x += panX
+          camera.position.y += panY
+          cameraTargetRef.current.x += panX
+          cameraTargetRef.current.y += panY
+        } else {
+          rootGroup.rotation.y += dx * 0.007
+          rootGroup.rotation.x += dy * 0.007
+        }
         previousMouse = { x: e.clientX, y: e.clientY }
         return
       }
@@ -338,6 +394,7 @@ export default function BioStructure3DViewer({
             chainId: a.chainId,
             residueId: a.residueId,
             element: a.element,
+            secondaryStructure: a.secondaryStructure || 'coil',
             x: e.clientX - rect.left,
             y: e.clientY - rect.top,
           })
@@ -351,17 +408,31 @@ export default function BioStructure3DViewer({
 
     const onPointerUp = () => {
       dragging = false
+      isPanning = false
     }
+
+    const onContextMenu = (e) => e.preventDefault()
 
     const onWheel = (e) => {
       e.preventDefault()
       const radius = metricsRef.current.maxRadius || 30
-      const minZ = radius * 0.4
-      const maxZ = radius * 6.5
-      camera.position.z = Math.min(
-        maxZ,
-        Math.max(minZ, camera.position.z + e.deltaY * radius * 0.002)
-      )
+      const target = cameraTargetRef.current || new THREE.Vector3(0, 0, 0)
+      const offset = new THREE.Vector3().subVectors(camera.position, target)
+      const currentDist = offset.length()
+      const minDist = Math.min(radius * 0.15, 3.0)
+      const maxDist = radius * 8.0
+      const zoomFactor = 1 + (e.deltaY > 0 ? 0.08 : -0.08)
+      const newDist = Math.min(maxDist, Math.max(minDist, currentDist * zoomFactor))
+      if (currentDist > 0.001) {
+        offset.normalize().multiplyScalar(newDist)
+        camera.position.copy(target).add(offset)
+      } else {
+        camera.position.set(target.x, target.y, target.z + newDist)
+      }
+    }
+
+    const onDblClick = () => {
+      handleResetView()
     }
 
     const onClick = (e) => {
@@ -395,7 +466,9 @@ export default function BioStructure3DViewer({
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
     canvas.addEventListener('wheel', onWheel, { passive: false })
+    canvas.addEventListener('dblclick', onDblClick)
     canvas.addEventListener('click', onClick)
+    canvas.addEventListener('contextmenu', onContextMenu)
 
     // Render loop guarded against uncaught exceptions
     let isRunning = true
@@ -430,7 +503,9 @@ export default function BioStructure3DViewer({
       window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pointerup', onPointerUp)
       canvas.removeEventListener('wheel', onWheel)
+      canvas.removeEventListener('dblclick', onDblClick)
       canvas.removeEventListener('click', onClick)
+      canvas.removeEventListener('contextmenu', onContextMenu)
       resizeObserver.disconnect()
       disposeHierarchy(scene)
       try {
@@ -459,6 +534,51 @@ export default function BioStructure3DViewer({
       return
     }
 
+    // 1. Structure key to detect when a genuine new structure is loaded
+    const structureKey =
+      structure?.id ||
+      structure?.cleanId ||
+      structure?.title ||
+      (structure?.atoms?.length ? `${structure.atoms.length}_${structure.atoms[0]?.x}_${structure.atoms[0]?.y}` : null)
+
+    const isNewStructure = Boolean(structureKey && structureKey !== lastStructureKeyRef.current)
+
+    // Invariant structure centroid & bounding radius calculated across all macromolecular atoms.
+    // This guarantees the (0, 0, 0) origin NEVER shifts when toggling visibility of elements.
+    let { cx, cy, cz, maxRadius } = metricsRef.current
+    if (isNewStructure || !Number.isFinite(cx) || !maxRadius || maxRadius <= 15) {
+      const nonWaterAtoms = structure.atoms.filter((a) => !a.isWater)
+      const baseAtoms = nonWaterAtoms.length > 0 ? nonWaterAtoms : structure.atoms
+      let sumX = 0, sumY = 0, sumZ = 0, vCount = 0
+      for (let i = 0; i < baseAtoms.length; i++) {
+        const a = baseAtoms[i]
+        if (Number.isFinite(a.x) && Number.isFinite(a.y) && Number.isFinite(a.z)) {
+          sumX += a.x
+          sumY += a.y
+          sumZ += a.z
+          vCount++
+        }
+      }
+      if (vCount > 0) {
+        cx = sumX / vCount
+        cy = sumY / vCount
+        cz = sumZ / vCount
+      } else {
+        cx = 0
+        cy = 0
+        cz = 0
+      }
+
+      maxRadius = 15
+      for (let i = 0; i < baseAtoms.length; i++) {
+        const a = baseAtoms[i]
+        if (Number.isFinite(a.x) && Number.isFinite(a.y) && Number.isFinite(a.z)) {
+          const d = Math.hypot(a.x - cx, a.y - cy, a.z - cz)
+          if (d > maxRadius) maxRadius = d
+        }
+      }
+    }
+
     // Filter visible atoms based on visibility toggles
     const visibleAtoms = structure.atoms.filter((a) => {
       if (a.isWater) return showWater
@@ -467,35 +587,6 @@ export default function BioStructure3DViewer({
       if (a.record === 'HETATM' && !a.isStandardAA && !a.isNucleic) return showLigands
       return showProtein
     })
-
-    if (!visibleAtoms.length) return
-
-    // Safe centroid calculation (checking finite numbers)
-    let cx = 0, cy = 0, cz = 0
-    let validCount = 0
-    for (let i = 0; i < visibleAtoms.length; i++) {
-      const a = visibleAtoms[i]
-      if (Number.isFinite(a.x) && Number.isFinite(a.y) && Number.isFinite(a.z)) {
-        cx += a.x
-        cy += a.y
-        cz += a.z
-        validCount++
-      }
-    }
-    if (validCount === 0) return
-    cx /= validCount
-    cy /= validCount
-    cz /= validCount
-
-    // Safe bounding radius calculation
-    let maxRadius = 15
-    for (let i = 0; i < visibleAtoms.length; i++) {
-      const a = visibleAtoms[i]
-      if (Number.isFinite(a.x) && Number.isFinite(a.y) && Number.isFinite(a.z)) {
-        const d = Math.hypot(a.x - cx, a.y - cy, a.z - cz)
-        if (d > maxRadius) maxRadius = d
-      }
-    }
 
     metricsRef.current = {
       cx,
@@ -512,7 +603,7 @@ export default function BioStructure3DViewer({
     })
 
     // ----------------------------------------------------
-    // A. CARTOON / BACKBONE: Segmented Spline Trace
+    // A. CARTOON / BACKBONE: Authentic Secondary Structure Ribbons & Nucleic Rungs
     // ----------------------------------------------------
     if (representation === 'cartoon' || representation === 'backbone') {
       ;(structure.chains || []).forEach((chain) => {
@@ -533,6 +624,7 @@ export default function BioStructure3DViewer({
           const a = chainAtoms[i]
           if (!Number.isFinite(a.x) || !Number.isFinite(a.y) || !Number.isFinite(a.z)) continue
           const pt = new THREE.Vector3(a.x - cx, a.y - cy, a.z - cz)
+          pt.atom = a
 
           if (currentSeg.length > 0) {
             const lastPt = currentSeg[currentSeg.length - 1]
@@ -555,11 +647,29 @@ export default function BioStructure3DViewer({
         segments.forEach((segPoints) => {
           if (representation === 'cartoon' && segPoints.length >= 3) {
             try {
+              // Determine predominant secondary structure for radius styling
+              let helixCount = 0
+              let sheetCount = 0
+              segPoints.forEach((p) => {
+                if (p.atom?.secondaryStructure === 'helix') helixCount++
+                if (p.atom?.secondaryStructure === 'sheet') sheetCount++
+              })
+
+              let tubeRadius = 0.42
+              if (chain.type === 'dna') {
+                tubeRadius = 0.65
+              } else if (helixCount > segPoints.length * 0.45) {
+                tubeRadius = 0.68 // Alpha-helix thickened ribbon cylinder
+              } else if (sheetCount > segPoints.length * 0.45) {
+                tubeRadius = 0.54 // Beta-sheet ribbon
+              } else {
+                tubeRadius = 0.36 // Coil / loop
+              }
+
               // Centripetal parameterization avoids wild loops and self-intersection
               const curve = new THREE.CatmullRomCurve3(segPoints, false, 'centripetal')
-              const tubeSegments = Math.min(Math.max(segPoints.length * 2, 8), 120)
-              const tubeRadius = chain.type === 'dna' ? 0.65 : 0.48
-              const tubeGeo = new THREE.TubeGeometry(curve, tubeSegments, tubeRadius, 6, false)
+              const tubeSegments = Math.min(Math.max(segPoints.length * 3, 12), 160)
+              const tubeGeo = new THREE.TubeGeometry(curve, tubeSegments, tubeRadius, 8, false)
 
               // Verify all vertex coordinates are finite
               const posArr = tubeGeo.attributes.position.array
@@ -574,8 +684,8 @@ export default function BioStructure3DViewer({
               if (!hasNaN) {
                 const tubeMat = new THREE.MeshStandardMaterial({
                   color: new THREE.Color(chainColor),
-                  roughness: 0.35,
-                  metalness: 0.15,
+                  roughness: 0.32,
+                  metalness: 0.18,
                 })
                 const tubeMesh = new THREE.Mesh(tubeGeo, tubeMat)
                 rootGroup.add(tubeMesh)
@@ -588,20 +698,139 @@ export default function BioStructure3DViewer({
             }
           }
 
-          // Safe, crash-proof Line fallback for backbone or 2-point segments
+          // Safe Line fallback for backbone or 2-point segments
           const lineGeo = new THREE.BufferGeometry().setFromPoints(segPoints)
           const lineMat = new THREE.LineBasicMaterial({
             color: new THREE.Color(chainColor),
-            linewidth: chain.type === 'dna' ? 2 : 1.5,
+            linewidth: chain.type === 'dna' ? 2.5 : 1.5,
           })
           const lineMesh = new THREE.Line(lineGeo, lineMat)
           rootGroup.add(lineMesh)
         })
       })
+
+      // Nucleic Base-Pair Rungs (for DNA / RNA double-helices, identical to RCSB PDB)
+      if (showDna) {
+        const nucleicBackbone = visibleAtoms.filter(
+          (a) => a.isNucleic && (a.name === "C1'" || a.name === "N1" || a.name === "N9" || a.name === "P")
+        )
+        for (let i = 0; i < nucleicBackbone.length; i++) {
+          const a1 = nucleicBackbone[i]
+          for (let j = i + 1; j < nucleicBackbone.length; j++) {
+            const a2 = nucleicBackbone[j]
+            if (a1.chainId !== a2.chainId) {
+              const d = Math.hypot(a1.x - a2.x, a1.y - a2.y, a1.z - a2.z)
+              if (d >= 8.0 && d <= 12.5) {
+                const p1 = new THREE.Vector3(a1.x - cx, a1.y - cy, a1.z - cz)
+                const p2 = new THREE.Vector3(a2.x - cx, a2.y - cy, a2.z - cz)
+                const rung = createBondCylinder(p1, p2, 0.22, '#f59e0b')
+                if (rung) rootGroup.add(rung)
+              }
+            }
+          }
+        }
+      }
     }
 
     // ----------------------------------------------------
-    // B. INTERACTIVE ATOMS & PARTICLES MESH
+    // B. AUTHENTIC 3D BALL-AND-STICK LIGANDS (CPK Standard)
+    // ----------------------------------------------------
+    if (showLigands) {
+      const ligandAtoms = visibleAtoms.filter(
+        (a) => a.record === 'HETATM' && !a.isWater && !a.isMetal && !a.isNucleic
+      )
+      if (ligandAtoms.length > 0) {
+        const ligGroup = new THREE.Group()
+        const sphereGeo = new THREE.SphereGeometry(0.44, 16, 16)
+
+        // 1. Render ligand atom spheres with element-specific CPK colors
+        ligandAtoms.forEach((latom) => {
+          if (!Number.isFinite(latom.x) || !Number.isFinite(latom.y) || !Number.isFinite(latom.z)) return
+          const elColor = ELEMENT_COLORS[latom.element] || '#38bdf8'
+          const atomMat = new THREE.MeshStandardMaterial({
+            color: new THREE.Color(elColor),
+            roughness: 0.25,
+            metalness: 0.2,
+          })
+          const sphere = new THREE.Mesh(sphereGeo, atomMat)
+          sphere.position.set(latom.x - cx, latom.y - cy, latom.z - cz)
+          ligGroup.add(sphere)
+        })
+
+        // 2. Render covalent bonds connecting ligand atoms (distance 1.0 - 1.95 Å)
+        for (let i = 0; i < ligandAtoms.length; i++) {
+          const a1 = ligandAtoms[i]
+          for (let j = i + 1; j < ligandAtoms.length; j++) {
+            const a2 = ligandAtoms[j]
+            if (a1.residueId !== a2.residueId) continue
+            const dist = Math.hypot(a1.x - a2.x, a1.y - a2.y, a1.z - a2.z)
+            if (dist >= 0.95 && dist <= 1.95) {
+              const p1 = new THREE.Vector3(a1.x - cx, a1.y - cy, a1.z - cz)
+              const p2 = new THREE.Vector3(a2.x - cx, a2.y - cy, a2.z - cz)
+              const bondColor = ELEMENT_COLORS[a1.element] || '#94a3b8'
+              const cylinder = createBondCylinder(p1, p2, 0.13, bondColor)
+              if (cylinder) ligGroup.add(cylinder)
+            }
+          }
+        }
+
+        // 3. Highlight selected ligand with luminous aura
+        if (selectedLigandId) {
+          const activeLigAtoms = ligandAtoms.filter(
+            (a) => a.resName === selectedLigandId || a.residueId?.includes(selectedLigandId)
+          )
+          if (activeLigAtoms.length) {
+            let lx = 0, ly = 0, lz = 0
+            activeLigAtoms.forEach((a) => {
+              lx += a.x - cx
+              ly += a.y - cy
+              lz += a.z - cz
+            })
+            lx /= activeLigAtoms.length
+            ly /= activeLigAtoms.length
+            lz /= activeLigAtoms.length
+
+            const haloGeo = new THREE.SphereGeometry(3.6, 20, 20)
+            const haloMat = new THREE.MeshBasicMaterial({
+              color: 0x38bdf8,
+              wireframe: true,
+              transparent: true,
+              opacity: 0.35,
+            })
+            const halo = new THREE.Mesh(haloGeo, haloMat)
+            halo.position.set(lx, ly, lz)
+            ligGroup.add(halo)
+          }
+        }
+
+        rootGroup.add(ligGroup)
+      }
+    }
+
+    // ----------------------------------------------------
+    // C. AUTHENTIC 3D SPHERES FOR CATALYTIC METAL IONS
+    // ----------------------------------------------------
+    if (showMetals) {
+      const metalAtoms = visibleAtoms.filter((a) => a.isMetal)
+      if (metalAtoms.length > 0) {
+        const metalGeo = new THREE.SphereGeometry(1.15, 20, 20)
+        metalAtoms.forEach((matom) => {
+          if (!Number.isFinite(matom.x) || !Number.isFinite(matom.y) || !Number.isFinite(matom.z)) return
+          const mColor = ELEMENT_COLORS[matom.element] || '#ec4899'
+          const mMat = new THREE.MeshStandardMaterial({
+            color: new THREE.Color(mColor),
+            roughness: 0.15,
+            metalness: 0.85,
+          })
+          const sphere = new THREE.Mesh(metalGeo, mMat)
+          sphere.position.set(matom.x - cx, matom.y - cy, matom.z - cz)
+          rootGroup.add(sphere)
+        })
+      }
+    }
+
+    // ----------------------------------------------------
+    // D. INTERACTIVE ATOMS & PARTICLES MESH (RAYCASTING & ALL-ATOM VIEWS)
     // ----------------------------------------------------
     const positions = []
     const colors = []
@@ -621,7 +850,7 @@ export default function BioStructure3DViewer({
       const isMetal = atom.isMetal
       const isBackboneAnchor = atom.name === 'CA' || atom.name === "C4'"
 
-      // In cartoon or backbone mode: render ligand, metal, pocket, highlighted, and CA anchors
+      // In cartoon or backbone mode: anchors are kept for raycasting
       if (representation === 'cartoon' || representation === 'backbone') {
         if (!isLigand && !isMetal && !isPocket && !isSelected && !isHighlighted && !isBackboneAnchor) {
           return
@@ -659,16 +888,16 @@ export default function BioStructure3DViewer({
       pointGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
 
       let pSize = 0.65
-      if (representation === 'space-filling') pSize = 1.35
+      if (representation === 'space-filling') pSize = 1.45
       else if (representation === 'surface') pSize = 1.85
-      else if (representation === 'ball-stick') pSize = 0.75
-      else pSize = 0.55
+      else if (representation === 'ball-stick') pSize = 0.8
+      else pSize = 0.52
 
       const pointMaterial = new THREE.PointsMaterial({
         size: pSize,
         vertexColors: true,
         transparent: representation === 'surface',
-        opacity: representation === 'surface' ? 0.32 : 0.95,
+        opacity: representation === 'surface' ? 0.32 : representation === 'cartoon' ? 0.8 : 0.95,
         sizeAttenuation: true,
       })
 
@@ -714,9 +943,15 @@ export default function BioStructure3DViewer({
       })
     }
 
-    // Initialize camera position based on structure bounds
-    camera.position.set(0, 0, maxRadius * 2.2)
-    camera.lookAt(0, 0, 0)
+    // Initialize camera position ONLY when a brand new structure is loaded
+    // Preserves zoom, pan, rotation, and camera target when toggling visibility elements or representations!
+    if (isNewStructure) {
+      rootGroup.rotation.set(0, 0, 0)
+      cameraTargetRef.current.set(0, 0, 0)
+      camera.position.set(0, 0, maxRadius * 2.2)
+      camera.lookAt(0, 0, 0)
+      lastStructureKeyRef.current = structureKey
+    }
   }, [
     structure,
     representation,
@@ -870,10 +1105,10 @@ export default function BioStructure3DViewer({
             style={{ left: hoveredInfo.x + 14, top: hoveredInfo.y - 14, zIndex: 20 }}
           >
             <strong>
-              {hoveredInfo.resName} {hoveredInfo.resNum} ({hoveredInfo.chainId})
+              {hoveredInfo.resName} {hoveredInfo.resNum} (Chain {hoveredInfo.chainId})
             </strong>
             <span>
-              Atom: {hoveredInfo.name} ({hoveredInfo.element})
+              Atom: {hoveredInfo.name} ({hoveredInfo.element}) · {hoveredInfo.secondaryStructure === 'helix' ? 'α-Helix' : hoveredInfo.secondaryStructure === 'sheet' ? 'β-Sheet' : hoveredInfo.secondaryStructure === 'nucleic' ? 'Nucleotide' : 'Coil / Loop'}
             </span>
           </div>
         )}

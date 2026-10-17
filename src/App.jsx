@@ -21,22 +21,23 @@ import BioStructureErrorBoundary from './components/biostructure/BioStructureErr
 import DtiLabView from './components/views/DtiLabView'
 import ScientificIntegrationsView from './components/views/ScientificIntegrationsView'
 import OverviewView from './components/views/OverviewView'
+import FeatureMolecularBackground from './components/common/FeatureMolecularBackground'
 
 const navItems = [
-  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { id: 'biostructure', label: 'BioStructure Intelligence Hub', icon: Dna, tag: 'New' },
-  { id: 'dti', label: 'DTI Lab', icon: FlaskConical, tag: 'AI' },
-  { id: 'integrations', label: 'Scientific Data Hub', icon: Database, tag: '7 DBs' },
-  { id: 'molecules', label: 'Molecule Lab', icon: Atom, tag: '3D' },
-  { id: 'visualize', label: 'Visualize Compound', icon: Atom, tag: 'Explore' },
-  { id: 'compare', label: 'Structure Comparison', icon: GitCompare, tag: 'Compare' },
-  { id: 'targets', label: 'Target Analysis', icon: Target },
-  { id: 'medicines', label: 'Medicine cabinet', icon: Package },
-  { id: 'expiry', label: 'Expiry monitor', icon: Bell, tag: 'Alerts' },
-  { id: 'schedule', label: 'Schedule', icon: CalendarDays },
-  { id: 'assistant', label: 'AI assistant', icon: Bot },
-  { id: 'analytics', label: 'Analytics', icon: Activity },
-  { id: 'research', label: 'Research Hub', icon: BrainCircuit, tag: 'Docs' },
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard, subtitle: 'Cinematic 3D Hub', tag: 'Live 3D' },
+  { id: 'biostructure', label: 'BioStructure Intelligence Hub', icon: Dna, subtitle: 'RCSB Macromolecules', tag: 'New' },
+  { id: 'dti', label: 'DTI Lab', icon: FlaskConical, subtitle: 'Neural Affinity Engine', tag: 'AI' },
+  { id: 'integrations', label: 'Scientific Data Hub', icon: Database, subtitle: '7 Federated Repositories', tag: '7 DBs' },
+  { id: 'molecules', label: 'Molecule Lab', icon: Atom, subtitle: '3D Chemical Builder', tag: '3D' },
+  { id: 'visualize', label: 'Visualize Compound', icon: Atom, subtitle: 'Conformer & SDF Stage', tag: 'Explore' },
+  { id: 'compare', label: 'Structure Comparison', icon: GitCompare, subtitle: 'MCS & Tanimoto Delta', tag: 'Compare' },
+  { id: 'targets', label: 'Target Analysis', icon: Target, subtitle: 'Kinase Active Profiling' },
+  { id: 'medicines', label: 'Medicine cabinet', icon: Package, subtitle: 'Compound Inventory' },
+  { id: 'expiry', label: 'Expiry monitor', icon: Bell, subtitle: 'Stability Surveillance', tag: 'Alerts' },
+  { id: 'schedule', label: 'Schedule', icon: CalendarDays, subtitle: 'Timetable & Protocols' },
+  { id: 'assistant', label: 'AI assistant', icon: Bot, subtitle: 'Bipasha Mam Assistant', tag: 'Ready' },
+  { id: 'analytics', label: 'Analytics', icon: Activity, subtitle: 'Pipeline Telemetry' },
+  { id: 'research', label: 'Research Hub', icon: BrainCircuit, subtitle: 'Notebooks & Papers', tag: 'Docs' },
 ]
 
 const medicineRows = [
@@ -45,11 +46,78 @@ const medicineRows = [
   { name: 'Paracetamol', detail: '500 mg · Pain / fever', expiry: 'Aug 17, 2026', status: 'Expired', tone: 'danger' },
 ]
 
+const DEFAULT_SIDEBAR_WIDTH = 348
+const MIN_SIDEBAR_WIDTH = 280
+const MAX_SIDEBAR_WIDTH = 560
+
 function App() {
   const [activePage, setActivePage] = useState('overview')
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [notice, setNotice] = useState(null)
   const [apiStatus, setApiStatus] = useState('checking')
+
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    try {
+      const saved = localStorage.getItem('aegis_sidebar_width')
+      if (saved) {
+        const parsed = Number(saved)
+        if (!isNaN(parsed) && parsed >= MIN_SIDEBAR_WIDTH && parsed <= MAX_SIDEBAR_WIDTH) {
+          return parsed
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return DEFAULT_SIDEBAR_WIDTH
+  })
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false)
+
+  // Keep --sidebar-width CSS variable in sync with sidebarWidth
+  useEffect(() => {
+    document.documentElement.style.setProperty('--sidebar-width', `${sidebarWidth}px`)
+  }, [sidebarWidth])
+
+  // Mouse & Touch Dragging Listeners
+  useEffect(() => {
+    if (!isResizingSidebar) return
+
+    const handleMouseMove = (e) => {
+      const clientX = e.clientX ?? (e.touches && e.touches[0]?.clientX)
+      if (typeof clientX !== 'number') return
+
+      const maxLimit = Math.min(MAX_SIDEBAR_WIDTH, window.innerWidth * 0.55)
+      const clampedWidth = Math.max(MIN_SIDEBAR_WIDTH, Math.min(maxLimit, Math.round(clientX)))
+      setSidebarWidth(clampedWidth)
+    }
+
+    const handleMouseUp = () => {
+      setIsResizingSidebar(false)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      try {
+        localStorage.setItem('aegis_sidebar_width', String(sidebarWidth))
+      } catch {
+        // ignore
+      }
+    }
+
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+    window.addEventListener('touchmove', handleMouseMove)
+    window.addEventListener('touchend', handleMouseUp)
+
+    return () => {
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+      window.removeEventListener('touchmove', handleMouseMove)
+      window.removeEventListener('touchend', handleMouseUp)
+    }
+  }, [isResizingSidebar, sidebarWidth])
 
   useEffect(() => {
     let mounted = true
@@ -68,32 +136,144 @@ function App() {
 
   return (
     <BipashaProvider activePage={activePage} navigate={navigate} setNotice={setNotice}>
-      <div className="app-shell">
-        <aside className={`sidebar ${mobileNavOpen ? 'is-open' : ''}`}>
+      <div className="app-shell" style={{ '--sidebar-width': `${sidebarWidth}px` }}>
+        <aside
+          className={`sidebar ${mobileNavOpen ? 'is-open' : ''} ${isResizingSidebar ? 'is-resizing' : ''}`}
+          style={{ width: `${sidebarWidth}px`, flexBasis: `${sidebarWidth}px` }}
+        >
           <div className="brand-lockup">
             <div className="brand-mark"><span /><span /><span /></div>
-            <div><strong>AEGIS</strong><small>MOLECULAR LAB</small></div>
+            <div>
+              <strong>AEGIS</strong>
+              <small>MOLECULAR LAB · LIVE</small>
+            </div>
             <button className="icon-button mobile-close" onClick={() => setMobileNavOpen(false)} aria-label="Close navigation"><X size={18} /></button>
           </div>
-          <div className="workspace-switcher"><div className="workspace-dot" /><div><small>WORKSPACE</small><strong>Research / default</strong></div><ChevronRight size={15} /></div>
+
+          <div
+            className="workspace-switcher"
+            onClick={() => setNotice('Workspace: Research / default · Accelerated Engine Online')}
+            role="button"
+            tabIndex={0}
+            title="Active Research Workspace"
+          >
+            <div className="workspace-dot" />
+            <div>
+              <small>ACTIVE WORKSPACE</small>
+              <strong>Research / default</strong>
+            </div>
+            <ChevronRight size={15} />
+          </div>
+
           <nav className="primary-nav" aria-label="Primary navigation">
-            <p className="nav-label">Workspace</p>
-            {navItems.map(({ id, label, icon: Icon, tag }) => (
-              <button className={`nav-item ${activePage === id ? 'active' : ''}`} key={id} onClick={() => navigate(id)}>
-                <Icon size={17} strokeWidth={1.8} /><span>{label}</span>{tag && <em>{tag}</em>}
-              </button>
-            ))}
+            <div className="nav-header-row">
+              <p className="nav-label">Workspace Modules</p>
+              <span className="live-modules-count">14 Online</span>
+            </div>
+            {navItems.map(({ id, label, icon: Icon, tag, subtitle }) => {
+              const isActive = activePage === id
+              return (
+                <button
+                  className={`nav-item ${isActive ? 'active' : ''}`}
+                  key={id}
+                  onClick={() => navigate(id)}
+                  aria-current={isActive ? 'page' : undefined}
+                  title={label}
+                >
+                  <div className="nav-icon-box">
+                    <Icon size={19} strokeWidth={isActive ? 2.2 : 1.9} />
+                    {isActive && <span className="nav-beacon active-beacon" />}
+                  </div>
+                  <div className="nav-content">
+                    <span className="nav-item-label">{label}</span>
+                    {subtitle && <small className="nav-item-sub">{subtitle}</small>}
+                  </div>
+                  {tag && (
+                    <em className={`nav-tag tag-${tag.toLowerCase().replace(/[^a-z0-9]/g, '')}`}>
+                      {(tag === 'New' || tag === 'Live 3D' || tag === 'Alerts' || tag === 'AI') && (
+                        <span className={`tag-live-dot ${tag === 'Live 3D' ? 'cyan' : tag === 'Alerts' ? 'orange' : tag === 'AI' ? 'blue' : 'green'}`} />
+                      )}
+                      {tag}
+                    </em>
+                  )}
+                  <ChevronRight size={14} className="nav-hover-arrow" />
+                </button>
+              )
+            })}
           </nav>
+
           <div className="sidebar-foot">
-            <div className="system-status"><span className={`status-dot ${apiStatus}`} /><div><small>SYSTEM STATUS</small><strong>{apiStatus === 'connected' ? 'API connected' : apiStatus === 'offline' ? 'API offline' : 'Connecting to API'}</strong></div></div>
-            <button className="nav-item" onClick={() => navigate('research')}><Settings2 size={17} /><span>Settings</span></button>
-            <button className="nav-item" onClick={() => navigate('research')}><CircleHelp size={17} /><span>Documentation</span></button>
-            <div className="profile-chip"><div className="avatar">SR</div><div><strong>Student Researcher</strong><small>Local workspace</small></div><ChevronRight size={15} /></div>
+            <div
+              className="system-status interactive-status"
+              onClick={() => setNotice(`System Status: ${apiStatus === 'connected' ? 'API Online · 7 Scientific Repositories Ready' : 'Connecting to Platform Services'}`)}
+              role="button"
+              tabIndex={0}
+              title="Click to check telemetry"
+            >
+              <span className={`status-dot ${apiStatus}`} />
+              <div>
+                <small>SYSTEM TELEMETRY</small>
+                <strong>{apiStatus === 'connected' ? 'API connected · Live' : apiStatus === 'offline' ? 'API offline' : 'Connecting to API'}</strong>
+              </div>
+            </div>
+            <button className="nav-item secondary-nav-item" onClick={() => navigate('research')}>
+              <div className="nav-icon-box"><Settings2 size={18} strokeWidth={1.8} /></div>
+              <div className="nav-content"><span className="nav-item-label">Settings</span></div>
+              <ChevronRight size={14} className="nav-hover-arrow" />
+            </button>
+            <button className="nav-item secondary-nav-item" onClick={() => navigate('research')}>
+              <div className="nav-icon-box"><CircleHelp size={18} strokeWidth={1.8} /></div>
+              <div className="nav-content"><span className="nav-item-label">Documentation</span></div>
+              <ChevronRight size={14} className="nav-hover-arrow" />
+            </button>
+            <div
+              className="profile-chip"
+              onClick={() => setNotice('User Profile: Student Researcher · Session active')}
+              role="button"
+              tabIndex={0}
+              title="User Profile"
+            >
+              <div className="avatar">SR</div>
+              <div>
+                <strong>Student Researcher</strong>
+                <small>Local workspace · Active</small>
+              </div>
+              <ChevronRight size={15} />
+            </div>
+          </div>
+
+          {/* Draggable sidebar edge resizer */}
+          <div
+            className={`sidebar-resizer ${isResizingSidebar ? 'is-resizing' : ''}`}
+            onMouseDown={(e) => {
+              e.preventDefault()
+              setIsResizingSidebar(true)
+            }}
+            onTouchStart={() => {
+              setIsResizingSidebar(true)
+            }}
+            onDoubleClick={() => {
+              setSidebarWidth(DEFAULT_SIDEBAR_WIDTH)
+              try {
+                localStorage.setItem('aegis_sidebar_width', String(DEFAULT_SIDEBAR_WIDTH))
+              } catch {}
+            }}
+            title="Drag edge to resize sidebar width (double-click to reset)"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize sidebar width"
+          >
+            <div className="sidebar-resizer-grip" />
           </div>
         </aside>
         {mobileNavOpen && <button className="sidebar-scrim" onClick={() => setMobileNavOpen(false)} aria-label="Close navigation overlay" />}
 
         <main className="main-content">
+          {/* Molecular background animation for feature pages (inspired by Bipasha Mam AI's molecular logo) */}
+          {activePage !== 'overview' && (
+            <FeatureMolecularBackground activePage={activePage} />
+          )}
+
           <header className="topbar">
             <button className="icon-button mobile-menu" onClick={() => setMobileNavOpen(true)} aria-label="Open navigation"><Menu size={20} /></button>
             <div className="breadcrumb"><span>AEGIS LAB</span><ChevronRight size={14} /><strong>{page.label}</strong></div>

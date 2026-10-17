@@ -90,6 +90,9 @@ export function parsePdbStructure(rawText, pdbId = '2XCT') {
   const proteinChains = new Set()
   const atoms = []
   const assemblies = []
+  const helices = []
+  const sheets = []
+  let remarkQuaternary = null
 
   lines.forEach((line) => {
     const record = line.slice(0, 6).trim()
@@ -121,6 +124,28 @@ export function parsePdbStructure(rawText, pdbId = '2XCT') {
       }
     } else if (record === 'EXPDTA') {
       metadata.experimentalMethod = line.slice(10).trim() || metadata.experimentalMethod
+    } else if (record === 'HELIX') {
+      const helixId = line.slice(11, 14).trim()
+      const initChainId = line.slice(19, 20).trim()
+      const initSeqNum = Number.parseInt(line.slice(21, 25).trim(), 10)
+      const endChainId = line.slice(31, 32).trim()
+      const endSeqNum = Number.parseInt(line.slice(33, 37).trim(), 10)
+      const helixClass = Number.parseInt(line.slice(38, 40).trim(), 10) || 1
+      const length = Number.parseInt(line.slice(71, 76).trim(), 10) || (endSeqNum - initSeqNum + 1)
+      if (initChainId && Number.isFinite(initSeqNum) && Number.isFinite(endSeqNum)) {
+        helices.push({ helixId, initChainId, initSeqNum, endChainId, endSeqNum, helixClass, length })
+      }
+    } else if (record === 'SHEET') {
+      const sheetId = line.slice(7, 10).trim()
+      const strandNum = Number.parseInt(line.slice(11, 13).trim(), 10) || 1
+      const initChainId = line.slice(21, 22).trim()
+      const initSeqNum = Number.parseInt(line.slice(22, 26).trim(), 10)
+      const endChainId = line.slice(32, 33).trim()
+      const endSeqNum = Number.parseInt(line.slice(33, 37).trim(), 10)
+      const sense = Number.parseInt(line.slice(38, 40).trim(), 10) || 0
+      if (initChainId && Number.isFinite(initSeqNum) && Number.isFinite(endSeqNum)) {
+        sheets.push({ sheetId, strandNum, initChainId, initSeqNum, endChainId, endSeqNum, sense })
+      }
     } else if (record === 'JRNL') {
       if (!metadata.primaryCitation) {
         metadata.primaryCitation = {
@@ -162,6 +187,12 @@ export function parsePdbStructure(rawText, pdbId = '2XCT') {
         if (matchFree) metadata.rFree = Number.parseFloat(matchFree[1])
         const matchWork = line.match(/R VALUE\s+\(WORKING SET\)\s+:\s+([0-9.]+)/i)
         if (matchWork) metadata.rWork = Number.parseFloat(matchWork[1])
+      }
+      if (line.includes('DETERMINED BIOLOGICAL UNIT:') || line.includes('QUATERNARY STRUCTURE:')) {
+        const qParts = line.split(/:\s*/)
+        if (qParts[1] && !remarkQuaternary) {
+          remarkQuaternary = qParts[1].trim()
+        }
       }
     } else if (record === 'SOURCE') {
       if (line.includes('ORGANISM_SCIENTIFIC:')) {
@@ -468,9 +499,52 @@ export function parsePdbStructure(rawText, pdbId = '2XCT') {
     metadata.unitCell = { a: 88.98, b: 123.17, c: 170.42, alpha: 90, beta: 90.25, gamma: 90, z: 4 }
   }
 
+  // Assign secondary structures to all residues & atoms based on parsed HELIX and SHEET records
+  residuesMap.forEach((res) => {
+    let secStruct = res.isNucleic ? 'nucleic' : 'loop'
+    if (!res.isNucleic && !res.isWater && !res.isMetal) {
+      for (let h = 0; h < helices.length; h++) {
+        const hx = helices[h]
+        if (hx.initChainId === res.chainId && res.resNum >= hx.initSeqNum && res.resNum <= hx.endSeqNum) {
+          secStruct = 'helix'
+          break
+        }
+      }
+      if (secStruct === 'loop') {
+        for (let s = 0; s < sheets.length; s++) {
+          const sh = sheets[s]
+          if (sh.initChainId === res.chainId && res.resNum >= sh.initSeqNum && res.resNum <= sh.endSeqNum) {
+            secStruct = 'sheet'
+            break
+          }
+        }
+      }
+    }
+    res.secondaryStructure = secStruct
+    if (Array.isArray(res.atomIndices)) {
+      res.atomIndices.forEach((idx) => {
+        if (atoms[idx]) {
+          atoms[idx].secondaryStructure = secStruct
+        }
+      })
+    }
+  })
+
+  if (remarkQuaternary) {
+    metadata.quaternaryDetails = remarkQuaternary
+  }
+
+  const pChains = Array.from(chainsMap.values()).filter((c) => c.type === 'protein')
+  const nChains = Array.from(chainsMap.values()).filter((c) => c.type === 'dna' || c.type === 'rna')
+  let autoStoich = 'Monomer (Single Chain)'
+  if (pChains.length === 2 && nChains.length === 0) autoStoich = 'Dimer (2 Subunits)'
+  else if (pChains.length === 4 && nChains.length === 0) autoStoich = 'Homotetramer (4 Subunits)'
+  else if (pChains.length > 0 && nChains.length > 0) autoStoich = `Hetero-complex (${pChains.length} Protein + ${nChains.length} Nucleic Subunits)`
+  else if (pChains.length > 1) autoStoich = `Multimer (${pChains.length} Chains)`
+
   assemblies.push(
-    { id: 'asym', name: 'Asymmetric Unit', stoichiometry: 'Deposited Coordinates' },
-    { id: 'assembly-1', name: 'Biological Assembly 1', stoichiometry: 'Hetero-multimer' }
+    { id: 'asym', name: 'Asymmetric Unit', stoichiometry: `${chainsMap.size} Chain(s) Deposited Coordinates` },
+    { id: 'assembly-1', name: 'Biological Assembly 1', stoichiometry: remarkQuaternary || autoStoich }
   )
 
   return {
@@ -480,6 +554,8 @@ export function parsePdbStructure(rawText, pdbId = '2XCT') {
     ligands,
     metalIons,
     assemblies,
+    helices,
+    sheets,
     atoms,
     totalAtoms: atoms.length,
     totalResidues: residuesMap.size,
@@ -1541,6 +1617,9 @@ async function request(path, options = {}) {
   return response.json()
 }
 
+const PDB_TEXT_CACHE = new Map()
+const STRUCTURE_CACHE = new Map()
+
 /**
  * Checks if a PDB text string is the synthetic 70-residue alpha-helix fallback.
  */
@@ -1550,10 +1629,35 @@ export function isSyntheticFallbackPdb(text) {
 }
 
 /**
+ * Checks if a string contains genuine, valid PDB coordinates (not HTML 404, JSON errors, or synthetic fallbacks).
+ */
+export function isValidPdbText(text) {
+  if (!text || typeof text !== 'string' || text.length < 100) return false
+  const trimmed = text.trim()
+  if (
+    trimmed.startsWith('<') ||
+    trimmed.startsWith('{') ||
+    trimmed.startsWith('[') ||
+    trimmed.includes('<!DOCTYPE') ||
+    trimmed.includes('<html') ||
+    trimmed.includes('{"error"') ||
+    trimmed.includes('{"message"')
+  ) {
+    return false
+  }
+  if (isSyntheticFallbackPdb(text)) return false
+  return /(?:^|\n)(?:ATOM  |HETATM|HEADER)/m.test(text)
+}
+
+/**
  * Fetches parsed structure metadata from backend with robust offline fallback.
  */
 export async function getBioStructure(pdbId) {
   const cleanId = String(pdbId).trim().toUpperCase()
+
+  if (STRUCTURE_CACHE.has(cleanId)) {
+    return STRUCTURE_CACHE.get(cleanId)
+  }
 
   // 1. First attempt: backend structure endpoint
   try {
@@ -1563,15 +1667,16 @@ export async function getBioStructure(pdbId) {
       const isSynthetic = data.structure.atoms.length <= 365 &&
         (data.structure.metadata?.title?.includes('CRYSTAL STRUCTURE OF') || isSyntheticFallbackPdb(data.structure.rawText || ''))
       if (!isSynthetic) {
+        STRUCTURE_CACHE.set(cleanId, data.structure)
         return data.structure
       }
     }
     // If backend returned structure with metadata but omitted atoms, fetch & parse real coordinates
     if (data.structure && data.structure.metadata) {
       const rawText = await getBioStructurePdbText(cleanId)
-      if (rawText && !isSyntheticFallbackPdb(rawText)) {
+      if (isValidPdbText(rawText)) {
         const parsed = parsePdbStructure(rawText, cleanId)
-        return {
+        const combined = {
           ...parsed,
           ...data.structure,
           atoms: parsed.atoms,
@@ -1582,6 +1687,8 @@ export async function getBioStructure(pdbId) {
             ...data.structure.metadata,
           },
         }
+        STRUCTURE_CACHE.set(cleanId, combined)
+        return combined
       }
     }
   } catch {
@@ -1591,8 +1698,10 @@ export async function getBioStructure(pdbId) {
   // 2. Parse authentic PDB text from local static / disk / direct RCSB
   try {
     const pdbText = await getBioStructurePdbText(cleanId)
-    if (pdbText && !isSyntheticFallbackPdb(pdbText)) {
-      return parsePdbStructure(pdbText, cleanId)
+    if (isValidPdbText(pdbText)) {
+      const parsed = parsePdbStructure(pdbText, cleanId)
+      STRUCTURE_CACHE.set(cleanId, parsed)
+      return parsed
     }
   } catch {}
 
@@ -1620,6 +1729,11 @@ export async function getBioStructure(pdbId) {
 export async function getBioStructurePdbText(pdbId) {
   const cleanId = String(pdbId).trim().toUpperCase()
 
+  // 0. In-memory coordinate cache
+  if (PDB_TEXT_CACHE.has(cleanId)) {
+    return PDB_TEXT_CACHE.get(cleanId)
+  }
+
   // 1. Static asset bundle in browser (served from /data/structures/${cleanId}.pdb)
   if (typeof window !== 'undefined' && window.location) {
     try {
@@ -1628,24 +1742,29 @@ export async function getBioStructurePdbText(pdbId) {
       })
       if (staticRes.ok) {
         const text = await staticRes.text()
-        if (text && text.length > 200 && !isSyntheticFallbackPdb(text)) {
+        if (isValidPdbText(text)) {
+          PDB_TEXT_CACHE.set(cleanId, text)
           return text
         }
       }
     } catch {}
   }
 
-  // 2. Node.js environment: read directly from server/data/structures
-  if (typeof process !== 'undefined' && process.versions?.node) {
+  // 2. Node.js environment: read directly from server/data/structures (for node test runs)
+  if (typeof window === 'undefined' && typeof process !== 'undefined' && process.versions?.node) {
     try {
-      const fsMod = await import('node:fs/promises')
-      const pathMod = await import('node:path')
-      const urlMod = await import('node:url')
+      const fsName = 'node:fs/promises'
+      const pathName = 'node:path'
+      const urlName = 'node:url'
+      const fsMod = await import(/* @vite-ignore */ fsName)
+      const pathMod = await import(/* @vite-ignore */ pathName)
+      const urlMod = await import(/* @vite-ignore */ urlName)
       const __filename = urlMod.fileURLToPath(import.meta.url)
       const __dirname = pathMod.dirname(__filename)
       const diskPath = pathMod.resolve(__dirname, '../../server/data/structures', `${cleanId}.pdb`)
       const diskText = await fsMod.readFile(diskPath, 'utf-8')
-      if (diskText && diskText.length > 200 && !isSyntheticFallbackPdb(diskText)) {
+      if (isValidPdbText(diskText)) {
+        PDB_TEXT_CACHE.set(cleanId, diskText)
         return diskText
       }
     } catch {}
@@ -1659,7 +1778,8 @@ export async function getBioStructurePdbText(pdbId) {
     })
     if (response.ok) {
       const text = await response.text()
-      if (text && text.length > 200 && !isSyntheticFallbackPdb(text)) {
+      if (isValidPdbText(text)) {
+        PDB_TEXT_CACHE.set(cleanId, text)
         return text
       }
     }
@@ -1668,11 +1788,26 @@ export async function getBioStructurePdbText(pdbId) {
   // 4. Direct RCSB download (CORS enabled in browser)
   try {
     const directRes = await fetch(`https://files.rcsb.org/download/${cleanId}.pdb`, {
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(12000),
     })
     if (directRes.ok) {
       const text = await directRes.text()
-      if (text && text.length > 200 && !isSyntheticFallbackPdb(text)) {
+      if (isValidPdbText(text)) {
+        PDB_TEXT_CACHE.set(cleanId, text)
+        return text
+      }
+    }
+  } catch {}
+
+  // 4b. Alternate RCSB models download
+  try {
+    const altRes = await fetch(`https://models.rcsb.org/v1/${cleanId}/atoms?format=pdb`, {
+      signal: AbortSignal.timeout(12000),
+    })
+    if (altRes.ok) {
+      const text = await altRes.text()
+      if (isValidPdbText(text)) {
+        PDB_TEXT_CACHE.set(cleanId, text)
         return text
       }
     }
@@ -2674,7 +2809,7 @@ export async function loadCompleteBioStructure(queryOrId, ligandId = '', cutoff 
   const rawPdb = pdbRes.status === 'fulfilled' ? pdbRes.value : null
   const rcsbData = rcsbRes.status === 'fulfilled' ? rcsbRes.value : null
 
-  if (rawPdb && !isSyntheticFallbackPdb(rawPdb)) {
+  if (isValidPdbText(rawPdb)) {
     try {
       const parsed = parsePdbStructure(rawPdb, effectivePdbId)
       structure = {
@@ -2684,6 +2819,9 @@ export async function loadCompleteBioStructure(queryOrId, ligandId = '', cutoff 
         chains: parsed.chains?.length ? parsed.chains : (structure?.chains || []),
         ligands: parsed.ligands?.length ? parsed.ligands : (structure?.ligands || []),
         residues: parsed.residues?.length ? parsed.residues : (structure?.residues || []),
+        assemblies: parsed.assemblies?.length ? parsed.assemblies : (structure?.assemblies || []),
+        helices: parsed.helices || structure?.helices || [],
+        sheets: parsed.sheets || structure?.sheets || [],
         totalAtoms: parsed.atoms?.length || parsed.totalAtoms,
         metadata: {
           ...(structure?.metadata || {}),
@@ -2694,7 +2832,7 @@ export async function loadCompleteBioStructure(queryOrId, ligandId = '', cutoff 
       console.warn('PDB text parse error:', e)
     }
   } else if (!structure || !structure.atoms?.length) {
-    const fallbackText = (rawPdb && !isSyntheticFallbackPdb(rawPdb)) ? rawPdb : generateFallbackPdbText(effectivePdbId)
+    const fallbackText = isValidPdbText(rawPdb) ? rawPdb : generateFallbackPdbText(effectivePdbId)
     structure = parsePdbStructure(fallbackText, effectivePdbId)
   }
 

@@ -1212,9 +1212,27 @@ export function generateFallbackPdbText(pdbId = '2XCT', title = '', ligandName =
   return lines.join('\n')
 }
 
-function isSyntheticFallbackText(text) {
+export function isSyntheticFallbackText(text) {
   if (!text || typeof text !== 'string' || text.length < 50) return true
   return text.includes('15-OCT-26') && text.includes('A 901') && text.includes('MG   MG   A 902')
+}
+
+export function isValidPdbText(text) {
+  if (!text || typeof text !== 'string' || text.length < 100) return false
+  const trimmed = text.trim()
+  if (
+    trimmed.startsWith('<') ||
+    trimmed.startsWith('{') ||
+    trimmed.startsWith('[') ||
+    trimmed.includes('<!DOCTYPE') ||
+    trimmed.includes('<html') ||
+    trimmed.includes('{"error"') ||
+    trimmed.includes('{"message"')
+  ) {
+    return false
+  }
+  if (isSyntheticFallbackText(text)) return false
+  return /(?:^|\n)(?:ATOM  |HETATM|HEADER)/m.test(text)
 }
 
 /**
@@ -1234,7 +1252,7 @@ export async function getStructureData(pdbId) {
     try {
       const filePath = path.join(CACHE_DIR, `${cleanId}.pdb`)
       const existing = await fs.readFile(filePath, 'utf-8')
-      if (existing && existing.length > 50 && !isSyntheticFallbackText(existing)) {
+      if (isValidPdbText(existing)) {
         pdbText = existing
       }
     } catch {
@@ -1250,7 +1268,7 @@ export async function getStructureData(pdbId) {
       })
       if (response.ok) {
         const fetchedText = await response.text()
-        if (fetchedText && fetchedText.length > 200 && !isSyntheticFallbackText(fetchedText)) {
+        if (isValidPdbText(fetchedText)) {
           pdbText = fetchedText
           // Save authentic structure to cache dir
           if (fs && path && CACHE_DIR) {

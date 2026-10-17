@@ -12,6 +12,14 @@ export default function OverviewView({ navigate, setNotice }) {
   const containerRef = useRef(null)
   const [scrollProgress, setScrollProgress] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
+  const [viewMode, setViewMode] = useState('cinematic')
+  const [isAutoSpin, setIsAutoSpin] = useState(true)
+  const [telemetry, setTelemetry] = useState({
+    azimuth: '0.0',
+    distance: '32.0',
+    activeBp: 'A-T (Adenine · Thymine)',
+    waveIndex: 1,
+  })
 
   // Track window resize for responsive 3D geometry
   useEffect(() => {
@@ -40,7 +48,12 @@ export default function OverviewView({ navigate, setNotice }) {
     const currentOffset = Math.max(0, -rect.top)
     const progress = Math.min(Math.max(currentOffset / totalHeight, 0), 1)
     setScrollProgress(progress)
-  }, [])
+
+    // Automatically switch back to cinematic mode if the user scrolls deeply into the story
+    if (progress > 0.12 && viewMode !== 'cinematic') {
+      setViewMode('cinematic')
+    }
+  }, [viewMode])
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll, { passive: true })
@@ -57,18 +70,29 @@ export default function OverviewView({ navigate, setNotice }) {
 
   return (
     <div className="cinematic-overview-root" ref={containerRef}>
-      {/* 3D WebGL Helix Background Canvas (Fixed/Sticky Backdrop) */}
-      <div className="cinematic-backdrop-stage" aria-hidden="true">
+      {/* 3D WebGL Helix Background Canvas (Fixed/Sticky Backdrop in Rust Red & Emerald Green) */}
+      <div className="cinematic-backdrop-stage" aria-label="Interactive 3D Molecular Backdrop">
         <div className="backdrop-gradient-vignette" />
-        <CinematicHelixCanvas scrollProgress={scrollProgress} isMobile={isMobile} />
+        <CinematicHelixCanvas
+          scrollProgress={scrollProgress}
+          isMobile={isMobile}
+          viewMode={viewMode}
+          isAutoSpin={isAutoSpin}
+          onTelemetry={setTelemetry}
+        />
       </div>
 
       {/* Scroll-Driven Cinematic Story Chapters */}
       <div className="cinematic-narrative-flow">
-        {/* Section A — Molecular Emergence (Hero) */}
+        {/* Section A — Molecular Emergence (Hero with Viewport Controls & Telemetry) */}
         <OverviewHeroSection
           navigate={navigate}
           onScrollToCapabilities={() => scrollToSection('capabilities-section')}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          isAutoSpin={isAutoSpin}
+          setIsAutoSpin={setIsAutoSpin}
+          telemetry={telemetry}
         />
 
         {/* Section B — Molecular Exploration (Atomic Precision) */}
@@ -89,4 +113,3 @@ export default function OverviewView({ navigate, setNotice }) {
     </div>
   )
 }
-

@@ -189,12 +189,14 @@ export default function BioStructureHubView({ setNotice = () => {}, navigate = (
       const data = await searchAdvancedBiostructures({ query, searchType: sType })
       setSearchResults(data)
       setNotice(`Identified ${data.totalCount || data.results?.length || 0} candidate(s) for "${query}".`)
+      const isPdbDirect = /^[0-9][A-Za-z0-9]{3}$/i.test(query.trim())
+      const cleanPdb = query.trim().toUpperCase()
       const topMatch = data.results?.[0]
-      const targetPdbId = topMatch?.pdbId || topMatch?.id
+      const targetPdbId = isPdbDirect ? cleanPdb : (topMatch?.pdbId || topMatch?.id)
       if (targetPdbId) {
         await loadStructureData(targetPdbId)
-      } else if (/^[0-9][A-Za-z0-9]{3}$/i.test(query.trim())) {
-        await loadStructureData(query.trim().toUpperCase())
+      } else if (isPdbDirect) {
+        await loadStructureData(cleanPdb)
       }
     } catch (err) {
       setErrorMessage(`Search error: ${err.message}`)

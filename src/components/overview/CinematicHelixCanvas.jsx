@@ -13,15 +13,36 @@ function isWebGLAvailable() {
   }
 }
 
-export default function CinematicHelixCanvas({ scrollProgress = 0, isMobile = false }) {
+export default function CinematicHelixCanvas({
+  scrollProgress = 0,
+  isMobile = false,
+  viewMode = 'cinematic',
+  isAutoSpin = true,
+  onTelemetry = null,
+}) {
   const mountRef = useRef(null)
   const [webglSupported, setWebglSupported] = useState(true)
   const progressRef = useRef(scrollProgress)
+  const viewModeRef = useRef(viewMode)
+  const autoSpinRef = useRef(isAutoSpin)
+  const onTelemetryRef = useRef(onTelemetry)
 
-  // Keep progressRef updated with latest scroll prop
+  // Keep refs synchronized with props
   useEffect(() => {
     progressRef.current = scrollProgress
   }, [scrollProgress])
+
+  useEffect(() => {
+    viewModeRef.current = viewMode
+  }, [viewMode])
+
+  useEffect(() => {
+    autoSpinRef.current = isAutoSpin
+  }, [isAutoSpin])
+
+  useEffect(() => {
+    onTelemetryRef.current = onTelemetry
+  }, [onTelemetry])
 
   useEffect(() => {
     if (!isWebGLAvailable()) {
@@ -48,7 +69,7 @@ export default function CinematicHelixCanvas({ scrollProgress = 0, isMobile = fa
     const camera = new THREE.PerspectiveCamera(44, width / height, 0.1, 1000)
     camera.position.set(0, 0, 32)
 
-    // 2. Renderer
+    // 2. High-Fidelity WebGL Renderer
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
@@ -57,30 +78,34 @@ export default function CinematicHelixCanvas({ scrollProgress = 0, isMobile = fa
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2))
     renderer.setSize(width, height)
     renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = 1.3
+    renderer.toneMappingExposure = 1.35
     container.appendChild(renderer.domElement)
 
-    // 3. Lighting
-    const ambientLight = new THREE.AmbientLight(0x0a1622, 2.4)
+    // 3. Lighting Harmony: Rust Red, Warm Ember, and Emerald Green
+    const ambientLight = new THREE.AmbientLight(0x07110e, 2.6)
     scene.add(ambientLight)
 
-    const keyLight = new THREE.DirectionalLight(0x00e5ff, 2.6)
+    // Key Light: Warm Rust-Red / Ember Directional Light
+    const keyLight = new THREE.DirectionalLight(0xff6b4a, 2.8)
     keyLight.position.set(18, 22, 20)
     scene.add(keyLight)
 
-    const violetFill = new THREE.PointLight(0xa78bfa, 2.4, 50)
-    violetFill.position.set(-18, -14, 18)
-    scene.add(violetFill)
+    // Fill Light: Lush Emerald Green Point Light
+    const emeraldFill = new THREE.PointLight(0x10b981, 2.6, 52)
+    emeraldFill.position.set(-18, -14, 18)
+    scene.add(emeraldFill)
 
-    const iceBlueCounter = new THREE.PointLight(0x38bdf8, 2.0, 45)
-    iceBlueCounter.position.set(14, -18, -12)
-    scene.add(iceBlueCounter)
+    // Counter Light: Warm Terracotta / Rust-Copper Accent
+    const rustCounter = new THREE.PointLight(0xea580c, 2.2, 45)
+    rustCounter.position.set(16, -18, -12)
+    scene.add(rustCounter)
 
-    const pulseLight = new THREE.PointLight(0x10b981, 3.2, 30)
+    // Traveling Volumetric Wave Light: Bio-Green / Emerald
+    const pulseLight = new THREE.PointLight(0x22c55e, 3.4, 32)
     pulseLight.position.set(0, 0, 8)
     scene.add(pulseLight)
 
-    // 4. Helix Geometry Construction
+    // 4. Helix Duplex Geometry Construction
     const helixGroup = new THREE.Group()
     scene.add(helixGroup)
 
@@ -115,23 +140,25 @@ export default function CinematicHelixCanvas({ scrollProgress = 0, isMobile = fa
     const curveA = new THREE.CatmullRomCurve3(pointsStrandA)
     const curveB = new THREE.CatmullRomCurve3(pointsStrandB)
 
-    const tubeGeoA = new THREE.TubeGeometry(curveA, numBasePairs * 4, 0.26, 10, false)
-    const tubeGeoB = new THREE.TubeGeometry(curveB, numBasePairs * 4, 0.26, 10, false)
+    const tubeGeoA = new THREE.TubeGeometry(curveA, numBasePairs * 4, 0.28, 10, false)
+    const tubeGeoB = new THREE.TubeGeometry(curveB, numBasePairs * 4, 0.28, 10, false)
 
+    // Strand A Material: Metallic Rust Red / Crimson
     const matStrandA = new THREE.MeshStandardMaterial({
-      color: 0x00e5ff,
-      metalness: 0.85,
-      roughness: 0.22,
-      emissive: 0x004455,
-      emissiveIntensity: 0.45,
+      color: 0xef4444,
+      metalness: 0.88,
+      roughness: 0.2,
+      emissive: 0x7f1d1d,
+      emissiveIntensity: 0.65,
     })
 
+    // Strand B Material: Metallic Bio-Green / Emerald
     const matStrandB = new THREE.MeshStandardMaterial({
-      color: 0x38bdf8,
-      metalness: 0.85,
-      roughness: 0.22,
-      emissive: 0x075985,
-      emissiveIntensity: 0.4,
+      color: 0x10b981,
+      metalness: 0.88,
+      roughness: 0.2,
+      emissive: 0x064e3b,
+      emissiveIntensity: 0.65,
     })
 
     const tubeMeshA = new THREE.Mesh(tubeGeoA, matStrandA)
@@ -140,52 +167,54 @@ export default function CinematicHelixCanvas({ scrollProgress = 0, isMobile = fa
     helixGroup.add(tubeMeshB)
 
     // Reusable geometries
-    const nucleotideSphereGeo = new THREE.SphereGeometry(0.42, 12, 12)
-    const hydrogenSphereGeo = new THREE.SphereGeometry(0.24, 10, 10)
-    const rungCylinderGeo = new THREE.CylinderGeometry(0.12, 0.12, 1, 8)
+    const nucleotideSphereGeo = new THREE.SphereGeometry(0.44, 12, 12)
+    const hydrogenSphereGeo = new THREE.SphereGeometry(0.26, 10, 10)
+    const rungCylinderGeo = new THREE.CylinderGeometry(0.13, 0.13, 1, 8)
 
-    // Nucleotide Base Materials (Adenine, Thymine, Guanine, Cytosine)
+    // Nucleotide Base Materials (Adenine, Thymine, Guanine, Cytosine in Rust Red & Green Harmony)
     const baseMaterials = {
       adenine: new THREE.MeshStandardMaterial({
-        color: 0x00f2fe,
-        metalness: 0.8,
-        roughness: 0.25,
-        emissive: 0x005577,
-        emissiveIntensity: 0.5,
+        color: 0xef4444, // Vibrant Rust Red
+        metalness: 0.82,
+        roughness: 0.22,
+        emissive: 0x991b1b,
+        emissiveIntensity: 0.6,
       }),
       thymine: new THREE.MeshStandardMaterial({
-        color: 0x60a5fa,
-        metalness: 0.75,
-        roughness: 0.3,
-        emissive: 0x1e3a8a,
-        emissiveIntensity: 0.45,
+        color: 0x10b981, // Luminous Emerald Green
+        metalness: 0.82,
+        roughness: 0.22,
+        emissive: 0x064e3b,
+        emissiveIntensity: 0.6,
       }),
       guanine: new THREE.MeshStandardMaterial({
-        color: 0x10b981,
-        metalness: 0.8,
-        roughness: 0.25,
-        emissive: 0x064e3b,
-        emissiveIntensity: 0.55,
+        color: 0xf97316, // Warm Rust Amber / Copper
+        metalness: 0.82,
+        roughness: 0.22,
+        emissive: 0x9a3412,
+        emissiveIntensity: 0.6,
       }),
       cytosine: new THREE.MeshStandardMaterial({
-        color: 0xa855f7,
-        metalness: 0.8,
-        roughness: 0.25,
-        emissive: 0x581c87,
-        emissiveIntensity: 0.5,
+        color: 0x34d399, // Bright Mint / Jade Green
+        metalness: 0.82,
+        roughness: 0.22,
+        emissive: 0x047857,
+        emissiveIntensity: 0.6,
       }),
     }
 
+    // Hydrogen bond nodule: Center energetic spark linking rust red & green rungs
     const hydrogenBondMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      metalness: 0.3,
+      color: 0xffedd5,
+      metalness: 0.2,
       roughness: 0.1,
-      emissive: 0x00e5ff,
-      emissiveIntensity: 0.95,
+      emissive: 0x10b981,
+      emissiveIntensity: 1.2,
     })
 
     const yUnitVector = new THREE.Vector3(0, 1, 0)
     const basePairMeshes = []
+    const baseNames = ['A-T (Adenine · Thymine)', 'G-C (Guanine · Cytosine)', 'T-A (Thymine · Adenine)', 'C-G (Cytosine · Guanine)']
 
     // Build base-pair rungs and nucleotide spheres
     for (let i = 0; i < numBasePairs; i++) {
@@ -193,7 +222,7 @@ export default function CinematicHelixCanvas({ scrollProgress = 0, isMobile = fa
       const pB = pointsStrandB[i]
       const midpoint = new THREE.Vector3().addVectors(pA, pB).multiplyScalar(0.5)
 
-      // Phosphate / sugar nodes on strand A & B
+      // Phosphate / sugar nodes on strand A (Rust) & strand B (Emerald)
       const nodeA = new THREE.Mesh(nucleotideSphereGeo, matStrandA)
       nodeA.position.copy(pA)
       helixGroup.add(nodeA)
@@ -202,7 +231,7 @@ export default function CinematicHelixCanvas({ scrollProgress = 0, isMobile = fa
       nodeB.position.copy(pB)
       helixGroup.add(nodeB)
 
-      // Base pair assignment (A-T, G-C, T-A, C-G sequence cycle)
+      // Canonical complementary base pair cycle (A-T, G-C, T-A, C-G)
       const cycle = i % 4
       const [mat1, mat2] = cycle === 0
         ? [baseMaterials.adenine, baseMaterials.thymine]
@@ -239,34 +268,46 @@ export default function CinematicHelixCanvas({ scrollProgress = 0, isMobile = fa
       hNode.position.copy(midpoint)
       helixGroup.add(hNode)
 
-      basePairMeshes.push({ hNode, rungMesh1, rungMesh2, index: i })
+      basePairMeshes.push({
+        hNode,
+        rungMesh1,
+        rungMesh2,
+        nodeA,
+        nodeB,
+        index: i,
+        name: baseNames[cycle],
+        baseY: midpoint.y,
+        origA: pA.clone(),
+        origB: pB.clone(),
+      })
     }
 
     // 5. Small-Molecule Ligand Complex (Section C - DTI Intelligence interaction)
     const ligandGroup = new THREE.Group()
-    const ligandAtomGeo = new THREE.SphereGeometry(0.32, 10, 10)
-    const ligandBondGeo = new THREE.CylinderGeometry(0.08, 0.08, 1, 6)
+    const ligandAtomGeo = new THREE.SphereGeometry(0.34, 10, 10)
+    const ligandBondGeo = new THREE.CylinderGeometry(0.09, 0.09, 1, 6)
+
+    // Ligand atoms styled in rust amber & emerald green
     const ligandAtomMat = new THREE.MeshStandardMaterial({
-      color: 0xf59e0b,
+      color: 0xf97316, // Rust Amber
       metalness: 0.8,
       roughness: 0.2,
-      emissive: 0xd97706,
-      emissiveIntensity: 0.6,
-    })
-    const ligandNitrogenMat = new THREE.MeshStandardMaterial({
-      color: 0x38bdf8,
-      metalness: 0.85,
-      roughness: 0.15,
-      emissive: 0x0284c7,
+      emissive: 0x9a3412,
       emissiveIntensity: 0.7,
     })
+    const ligandNitrogenMat = new THREE.MeshStandardMaterial({
+      color: 0x10b981, // Emerald Green
+      metalness: 0.85,
+      roughness: 0.15,
+      emissive: 0x059669,
+      emissiveIntensity: 0.75,
+    })
     const ligandBondMat = new THREE.MeshStandardMaterial({
-      color: 0xd97706,
-      metalness: 0.6,
+      color: 0xc2410c, // Rust Bronze
+      metalness: 0.65,
       roughness: 0.3,
     })
 
-    // Local coordinates for an aromatic heterocycle + carboxamide branch (Imatinib-like pharmacophore)
     const ligandAtoms = [
       { pos: new THREE.Vector3(0, 0, 0), mat: ligandAtomMat },
       { pos: new THREE.Vector3(0.9, 0.5, 0), mat: ligandAtomMat },
@@ -306,12 +347,12 @@ export default function CinematicHelixCanvas({ scrollProgress = 0, isMobile = fa
     ligandGroup.position.set(5.2, 1.8, 2.5)
     helixGroup.add(ligandGroup)
 
-    // Interaction vector line from ligand to helix pocket
+    // Interaction vector line from ligand to helix pocket: Emerald dashed glow
     const lineMat = new THREE.LineDashedMaterial({
-      color: 0x00e5ff,
+      color: 0x34d399,
       dashSize: 0.3,
       gapSize: 0.2,
-      linewidth: 1.5,
+      linewidth: 1.8,
     })
     const lineGeo = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(5.2, 1.8, 2.5),
@@ -321,46 +362,124 @@ export default function CinematicHelixCanvas({ scrollProgress = 0, isMobile = fa
     interactionLine.computeLineDistances()
     helixGroup.add(interactionLine)
 
-    // 6. Atmospheric Floating Particle Field
-    const particleCount = isMobile ? 120 : 260
+    // 6. Atmospheric Dual-Tone Floating Particle Field (Rust Red & Emerald Green)
+    const particleCount = isMobile ? 140 : 280
     const particleGeo = new THREE.BufferGeometry()
     const particlePositions = new Float32Array(particleCount * 3)
+    const particleColors = new Float32Array(particleCount * 3)
     const particleVels = []
 
+    // Color tones: Rust Red/Amber (#f97316 / #ef4444) and Emerald Green (#10b981 / #34d399)
+    const rustColor = new THREE.Color(0xf97316)
+    const greenColor = new THREE.Color(0x10b981)
+    const mintColor = new THREE.Color(0x34d399)
+    const amberColor = new THREE.Color(0xef4444)
+
     for (let i = 0; i < particleCount; i++) {
-      particlePositions[i * 3] = (Math.random() - 0.5) * 60
-      particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 50
-      particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 40
+      particlePositions[i * 3] = (Math.random() - 0.5) * 65
+      particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 55
+      particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 45
+
+      const c = i % 4 === 0 ? rustColor : i % 4 === 1 ? greenColor : i % 4 === 2 ? mintColor : amberColor
+      particleColors[i * 3] = c.r
+      particleColors[i * 3 + 1] = c.g
+      particleColors[i * 3 + 2] = c.b
 
       particleVels.push({
-        yVel: (Math.random() * 0.015 + 0.005),
-        xDrift: (Math.random() - 0.5) * 0.004,
+        yVel: (Math.random() * 0.016 + 0.006),
+        xDrift: (Math.random() - 0.5) * 0.005,
+        zDrift: (Math.random() - 0.5) * 0.004,
         phase: Math.random() * Math.PI * 2,
       })
     }
 
     particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3))
+    particleGeo.setAttribute('color', new THREE.BufferAttribute(particleColors, 3))
+
     const particleMat = new THREE.PointsMaterial({
-      size: isMobile ? 0.35 : 0.42,
-      color: 0x38bdf8,
+      size: isMobile ? 0.38 : 0.46,
+      vertexColors: true,
       transparent: true,
-      opacity: 0.65,
+      opacity: 0.72,
       blending: THREE.AdditiveBlending,
     })
     const particleCloud = new THREE.Points(particleGeo, particleMat)
     scene.add(particleCloud)
 
-    // 7. Pointer Parallax Tracking
+    // 7. Interactive Pointer & Drag Rotation Tracking
     let targetMouseX = 0
     let targetMouseY = 0
     let currentMouseX = 0
     let currentMouseY = 0
 
+    let isPointerDragging = false
+    let prevDragX = 0
+    let prevDragY = 0
+    let dragRotY = 0
+    let dragRotX = 0
+    let dragVelY = 0
+    let dragVelX = 0
+
     const handlePointerMove = (e) => {
       targetMouseX = (e.clientX / window.innerWidth - 0.5) * 2
       targetMouseY = (e.clientY / window.innerHeight - 0.5) * 2
+
+      if (isPointerDragging) {
+        const deltaX = e.clientX - prevDragX
+        const deltaY = e.clientY - prevDragY
+        prevDragX = e.clientX
+        prevDragY = e.clientY
+
+        dragVelY = deltaX * 0.006
+        dragVelX = deltaY * 0.006
+        dragRotY += dragVelY
+        dragRotX += dragVelX
+      }
     }
+
+    const handlePointerDown = (e) => {
+      // Allow drag rotation anywhere on interactive backdrop
+      isPointerDragging = true
+      prevDragX = e.clientX
+      prevDragY = e.clientY
+    }
+
+    const handlePointerUp = () => {
+      isPointerDragging = false
+    }
+
     window.addEventListener('mousemove', handlePointerMove, { passive: true })
+    window.addEventListener('mousedown', handlePointerDown)
+    window.addEventListener('mouseup', handlePointerUp)
+
+    // Touch support for mobile dragging
+    const handleTouchStart = (e) => {
+      if (e.touches.length === 1) {
+        isPointerDragging = true
+        prevDragX = e.touches[0].clientX
+        prevDragY = e.touches[0].clientY
+      }
+    }
+    const handleTouchMove = (e) => {
+      if (isPointerDragging && e.touches.length === 1) {
+        const deltaX = e.touches[0].clientX - prevDragX
+        const deltaY = e.touches[0].clientY - prevDragY
+        prevDragX = e.touches[0].clientX
+        prevDragY = e.touches[0].clientY
+
+        dragVelY = deltaX * 0.007
+        dragVelX = deltaY * 0.007
+        dragRotY += dragVelY
+        dragRotX += dragVelX
+      }
+    }
+    const handleTouchEnd = () => {
+      isPointerDragging = false
+    }
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: true })
+    window.addEventListener('touchmove', handleTouchMove, { passive: true })
+    window.addEventListener('touchend', handleTouchEnd, { passive: true })
 
     // 8. Resize Handler
     const handleResize = () => {
@@ -373,7 +492,7 @@ export default function CinematicHelixCanvas({ scrollProgress = 0, isMobile = fa
     }
     window.addEventListener('resize', handleResize)
 
-    // 9. Camera Spline Milestones for Scroll-driven Pacing
+    // 9. Camera Spline Milestones for Scroll-driven Pacing (Canonical preservation)
     const milestones = [
       { p: 0.00, cam: new THREE.Vector3(0, 0, 32), look: new THREE.Vector3(0, 0, 0) },
       { p: 0.28, cam: new THREE.Vector3(5.6, 2.4, 21), look: new THREE.Vector3(0.6, 1.2, 0) },
@@ -381,6 +500,14 @@ export default function CinematicHelixCanvas({ scrollProgress = 0, isMobile = fa
       { p: 0.78, cam: new THREE.Vector3(0, -1.8, 28), look: new THREE.Vector3(0, -1.0, 0) },
       { p: 1.00, cam: new THREE.Vector3(0, 4.0, 34), look: new THREE.Vector3(0, 0, 0) },
     ]
+
+    // Specialized Interactive View Targets
+    const viewTargets = {
+      cinematic: null, // calculated from scroll progress
+      duplex: { cam: new THREE.Vector3(3.4, 1.2, 14), look: new THREE.Vector3(0, 0.8, 0) },
+      ligand: { cam: new THREE.Vector3(7.2, 2.6, 10.5), look: new THREE.Vector3(5.2, 1.8, 2.5) },
+      axial: { cam: new THREE.Vector3(0.01, 38, 0.01), look: new THREE.Vector3(0, 0, 0) },
+    }
 
     function getInterpolatedCam(progress) {
       const p = Math.max(0, Math.min(1, progress))
@@ -404,46 +531,77 @@ export default function CinematicHelixCanvas({ scrollProgress = 0, isMobile = fa
       }
     }
 
-    // 10. Animation Render Loop
+    // 10. Animation Render Loop with Delta-Timed Damping
     let animId
     let clock = new THREE.Clock()
     let currentCamPos = new THREE.Vector3(0, 0, 32)
     let currentLookAt = new THREE.Vector3(0, 0, 0)
     let baseRotation = 0
+    let lastTelemetryTime = 0
 
     const render = () => {
       animId = requestAnimationFrame(render)
-      const delta = clock.getDelta()
+      const delta = Math.min(clock.getDelta(), 0.1) // clamp delta to prevent jumps
       const time = clock.getElapsedTime()
 
-      // Pointer lerp
+      // Delta-timed exponential damping for silky pointer tracking
+      const mouseDampFactor = 1 - Math.exp(-6.0 * delta)
       if (!prefersReducedMotion) {
-        currentMouseX += (targetMouseX - currentMouseX) * 0.05
-        currentMouseY += (targetMouseY - currentMouseY) * 0.05
+        currentMouseX += (targetMouseX - currentMouseX) * mouseDampFactor
+        currentMouseY += (targetMouseY - currentMouseY) * mouseDampFactor
+      }
+
+      // Decay drag velocity smoothly with momentum
+      if (!isPointerDragging) {
+        dragVelY *= Math.max(0, 1 - 4.0 * delta)
+        dragVelX *= Math.max(0, 1 - 4.0 * delta)
+        dragRotY += dragVelY
+        dragRotX += dragVelX
       }
 
       const p = progressRef.current
-      const { pos: targetCamPos, look: targetLookAt } = getInterpolatedCam(p)
+      const activeMode = viewModeRef.current || 'cinematic'
+
+      let targetCamPos
+      let targetLookAt
+
+      if (activeMode !== 'cinematic' && viewTargets[activeMode]) {
+        targetCamPos = viewTargets[activeMode].cam
+        targetLookAt = viewTargets[activeMode].look
+      } else {
+        const milestoneCam = getInterpolatedCam(p)
+        targetCamPos = milestoneCam.pos
+        targetLookAt = milestoneCam.look
+      }
 
       if (!prefersReducedMotion) {
-        // Subtle continuous spin + scroll-driven rotation
-        baseRotation += delta * 0.35
+        // Continuous organic rotation if auto-spin is enabled
+        if (autoSpinRef.current) {
+          baseRotation += delta * 0.38
+        }
+
         const scrollRotation = p * Math.PI * 3.4
-        helixGroup.rotation.y = baseRotation + scrollRotation
+        helixGroup.rotation.y = baseRotation + scrollRotation + dragRotY
 
-        // Tilt responding gently to scroll and pointer
-        helixGroup.rotation.z = Math.sin(p * Math.PI) * 0.16 + 0.1 + currentMouseX * 0.06
-        helixGroup.rotation.x = currentMouseY * 0.08
+        // Harmonic organic tilt responding to scroll, user drag, and pointer
+        helixGroup.rotation.z = Math.sin(p * Math.PI) * 0.16 + 0.1 + currentMouseX * 0.06 + Math.sin(time * 0.8) * 0.02
+        helixGroup.rotation.x = currentMouseY * 0.08 + dragRotX
 
-        // Lerp camera position
-        const parallaxX = currentMouseX * 1.8
-        const parallaxY = -currentMouseY * 1.5
+        // Gentle camera parallax
+        const parallaxX = currentMouseX * 1.6
+        const parallaxY = -currentMouseY * 1.4
 
-        currentCamPos.lerp(
-          new THREE.Vector3(targetCamPos.x + parallaxX, targetCamPos.y + parallaxY, targetCamPos.z),
-          0.06
+        const desiredCam = new THREE.Vector3(
+          targetCamPos.x + parallaxX,
+          targetCamPos.y + parallaxY,
+          targetCamPos.z
         )
-        currentLookAt.lerp(targetLookAt, 0.06)
+
+        // Delta-timed exponential smoothing for fluid camera motion across 60/120/144Hz
+        const camLerpAlpha = 1 - Math.exp(-4.8 * delta)
+        currentCamPos.lerp(desiredCam, camLerpAlpha)
+        currentLookAt.lerp(targetLookAt, camLerpAlpha)
+
         camera.position.copy(currentCamPos)
         camera.lookAt(currentLookAt)
       } else {
@@ -452,42 +610,76 @@ export default function CinematicHelixCanvas({ scrollProgress = 0, isMobile = fa
         helixGroup.rotation.y += delta * 0.1
       }
 
-      // Traveling volumetric pulse light
+      // Traveling volumetric wave light: Emerald / Green glow oscillation
       pulseLight.position.y = Math.sin(time * 1.8 + p * 8) * 16
+      pulseLight.position.x = Math.cos(time * 1.4) * 4
 
-      // Base-pair pulse glow
-      const activePulseIndex = Math.floor(((Math.sin(time * 2.2) + 1) / 2) * numBasePairs)
-      basePairMeshes.forEach(({ hNode, index }) => {
-        const isNear = Math.abs(index - activePulseIndex) <= 2
-        hNode.scale.setScalar(isNear ? 1.45 : 1.0)
+      // Base-pair continuous excitation wave & harmonic breathing
+      const waveCenter = ((Math.sin(time * 2.0) + 1) / 2) * (numBasePairs - 1)
+      let nearestIndex = Math.round(waveCenter)
+
+      basePairMeshes.forEach(({ hNode, rungMesh1, rungMesh2, index }) => {
+        const dist = Math.abs(index - waveCenter)
+        // Organic falloff wave
+        const waveIntensity = Math.max(0, 1 - dist / 3.2)
+        const scale = 1.0 + waveIntensity * 0.65
+        hNode.scale.setScalar(scale)
+
+        // Subtle harmonic vibration on base-pair rungs
+        const breathing = Math.sin(time * 2.5 + index * 0.3) * 0.03
+        rungMesh1.scale.x = 1 + breathing
+        rungMesh2.scale.x = 1 + breathing
       })
 
-      // Ligand bobbing motion in binding cleft
-      ligandGroup.position.y = 1.8 + Math.sin(time * 2.0) * 0.18
-      ligandGroup.rotation.y = time * 0.4
+      // Ligand bobbing and energetic rotation in binding cleft
+      ligandGroup.position.y = 1.8 + Math.sin(time * 2.2) * 0.22
+      ligandGroup.rotation.y = time * 0.45
+      ligandGroup.rotation.z = Math.sin(time * 1.6) * 0.12
 
-      // Particle cloud turbulence
+      // Atmospheric Particle Cloud Turbulence
       const posAttr = particleGeo.attributes.position
       for (let i = 0; i < particleCount; i++) {
         const v = particleVels[i]
         let py = posAttr.getY(i) - v.yVel
         let px = posAttr.getX(i) + Math.sin(time + v.phase) * v.xDrift
+        let pz = posAttr.getZ(i) + Math.cos(time + v.phase) * v.zDrift
 
-        if (py < -25) py = 25
+        if (py < -28) py = 28
         posAttr.setY(i, py)
         posAttr.setX(i, px)
+        posAttr.setZ(i, pz)
       }
       posAttr.needsUpdate = true
+
+      // Send live telemetry to parent component (throttled to ~100ms)
+      if (onTelemetryRef.current && time - lastTelemetryTime > 0.1) {
+        lastTelemetryTime = time
+        const rawAzimuth = ((helixGroup.rotation.y % (Math.PI * 2)) * 180 / Math.PI + 360) % 360
+        const camDistance = camera.position.distanceTo(currentLookAt)
+        const activeBpInfo = basePairMeshes[nearestIndex % numBasePairs]?.name || 'A-T'
+
+        onTelemetryRef.current({
+          azimuth: rawAzimuth.toFixed(1),
+          distance: camDistance.toFixed(1),
+          activeBp: activeBpInfo,
+          waveIndex: nearestIndex + 1,
+        })
+      }
 
       renderer.render(scene, camera)
     }
 
     render()
 
-    // 11. Cleanup
+    // 11. Cleanup with Strict Disposal
     return () => {
       cancelAnimationFrame(animId)
       window.removeEventListener('mousemove', handlePointerMove)
+      window.removeEventListener('mousedown', handlePointerDown)
+      window.removeEventListener('mouseup', handlePointerUp)
+      window.removeEventListener('touchstart', handleTouchStart)
+      window.removeEventListener('touchmove', handleTouchMove)
+      window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('resize', handleResize)
 
       // Geometry disposal
@@ -527,7 +719,7 @@ export default function CinematicHelixCanvas({ scrollProgress = 0, isMobile = fa
     <div
       ref={mountRef}
       className="cinematic-helix-canvas-container"
-      aria-label="3D Interactive DNA Double Helix Visualization"
+      aria-label="3D Interactive DNA Double Helix Visualization in Rust Red and Emerald Green"
       role="img"
     />
   )
@@ -541,12 +733,12 @@ function HelixFallbackScene() {
       <svg viewBox="0 0 400 800" className="fallback-helix-svg" aria-hidden="true">
         <defs>
           <linearGradient id="strandGrad1" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#00e5ff" />
-            <stop offset="100%" stopColor="#075985" />
+            <stop offset="0%" stopColor="#ef5a47" />
+            <stop offset="100%" stopColor="#c2410c" />
           </linearGradient>
           <linearGradient id="strandGrad2" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#38bdf8" />
-            <stop offset="100%" stopColor="#a855f7" />
+            <stop offset="0%" stopColor="#10b981" />
+            <stop offset="100%" stopColor="#047857" />
           </linearGradient>
         </defs>
         {Array.from({ length: 24 }).map((_, i) => {
@@ -556,10 +748,10 @@ function HelixFallbackScene() {
           const x2 = 200 + Math.cos(phase + Math.PI) * 90
           return (
             <g key={i}>
-              <line x1={x1} y1={y} x2={x2} y2={y} stroke="rgba(0, 229, 255, 0.35)" strokeWidth="2" strokeDasharray="3 3" />
-              <circle cx={x1} cy={y} r="5" fill="#00e5ff" />
-              <circle cx={x2} cy={y} r="5" fill="#a855f7" />
-              <circle cx={(x1 + x2) / 2} cy={y} r="3" fill="#ffffff" />
+              <line x1={x1} y1={y} x2={x2} y2={y} stroke="rgba(239, 90, 71, 0.35)" strokeWidth="2" strokeDasharray="3 3" />
+              <circle cx={x1} cy={y} r="5" fill="#ef5a47" />
+              <circle cx={x2} cy={y} r="5" fill="#10b981" />
+              <circle cx={(x1 + x2) / 2} cy={y} r="3" fill="#ffedd5" />
             </g>
           )
         })}
@@ -567,4 +759,3 @@ function HelixFallbackScene() {
     </div>
   )
 }
-

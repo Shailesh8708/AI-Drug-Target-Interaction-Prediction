@@ -3609,3 +3609,378 @@
   line-height: 1.4;
 }
 
+
+/* ==========================================================================
+   Biological Assembly & Experimental Quality Grid (Futuristic Dark Obsidian)
+   Fixes: Overrides .glass-panel white background, provides full legible layout
+   ========================================================================== */
+
+.biostructure-hub-shell .assembly-quality-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .biostructure-hub-shell .assembly-quality-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.biostructure-hub-shell .glass-panel.assembly-card,
+.biostructure-hub-shell .glass-panel.quality-card {
+  background: rgba(10, 16, 28, 0.94) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+  border-radius: 14px !important;
+  padding: 1.4rem 1.5rem !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  overflow: visible;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.biostructure-hub-shell .glass-panel.assembly-card:hover {
+  border-color: rgba(56, 189, 248, 0.5) !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 24px rgba(56, 189, 248, 0.14) !important;
+}
+
+.biostructure-hub-shell .glass-panel.quality-card:hover {
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 24px rgba(16, 185, 129, 0.14) !important;
+}
+
+.biostructure-hub-shell .section-head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  padding-bottom: 0.85rem;
+}
+
+.biostructure-hub-shell .section-head-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.biostructure-hub-shell .section-head-icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.biostructure-hub-shell .section-head-icon-box.cyan {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+}
+
+.biostructure-hub-shell .section-head-icon-box.emerald {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #10b981;
+}
+
+.biostructure-hub-shell .section-head-row h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.01em;
+}
+
+.biostructure-hub-shell .section-head-row .eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 0.15rem;
+  display: block;
+}
+
+.biostructure-hub-shell .head-status-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.28rem 0.65rem;
+  border-radius: 9999px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+  white-space: nowrap;
+}
+
+.biostructure-hub-shell .head-status-pill.emerald {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+
+.biostructure-hub-shell .head-status-pill.neutral {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.3);
+  color: #94a3b8;
+}
+
+/* Assembly Toggle Row */
+.biostructure-hub-shell .assembly-toggle-row {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.biostructure-hub-shell .assembly-pill-btn {
+  flex: 1;
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  padding: 0.65rem 0.9rem;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(71, 85, 105, 0.45);
+  border-radius: 10px;
+  color: #cbd5e1;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.biostructure-hub-shell .assembly-pill-btn:hover {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #f8fafc;
+}
+
+.biostructure-hub-shell .assembly-pill-btn.active {
+  background: rgba(14, 165, 233, 0.18);
+  border-color: #38bdf8;
+  color: #f0f9ff;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+}
+
+.biostructure-hub-shell .assembly-pill-btn strong {
+  font-size: 0.84rem;
+  font-weight: 600;
+  display: block;
+}
+
+.biostructure-hub-shell .assembly-pill-btn small {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  display: block;
+}
+
+.biostructure-hub-shell .assembly-pill-btn.active small {
+  color: #bae6fd;
+}
+
+/* Assembly Info Box */
+.biostructure-hub-shell .assembly-info-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  border-radius: 10px;
+  padding: 0.95rem 1.1rem;
+}
+
+.biostructure-hub-shell .info-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.biostructure-hub-shell .info-row.vertical {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.biostructure-hub-shell .info-label {
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.biostructure-hub-shell .info-value {
+  color: #f1f5f9;
+  font-weight: 500;
+  text-align: right;
+  word-break: break-word;
+}
+
+.biostructure-hub-shell .info-row.vertical .info-value {
+  text-align: left;
+}
+
+.biostructure-hub-shell .subunits-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.biostructure-hub-shell .subunit-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(71, 85, 105, 0.55);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: #e2e8f0;
+}
+
+.biostructure-hub-shell .subunit-chip.protein {
+  border-left: 3px solid #38bdf8;
+}
+
+.biostructure-hub-shell .subunit-chip.dna {
+  border-left: 3px solid #f59e0b;
+}
+
+.biostructure-hub-shell .subunit-chip.rna {
+  border-left: 3px solid #ec4899;
+}
+
+.biostructure-hub-shell .subunit-chip.ligand {
+  border-left: 3px solid #10b981;
+}
+
+/* Quality Metrics Grid */
+.biostructure-hub-shell .quality-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+@media (max-width: 500px) {
+  .biostructure-hub-shell .quality-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.biostructure-hub-shell .quality-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(51, 65, 85, 0.55);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  transition: border-color 0.2s ease;
+}
+
+.biostructure-hub-shell .quality-item:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.biostructure-hub-shell .q-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+
+.biostructure-hub-shell .q-val-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.biostructure-hub-shell .q-val-row strong {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.biostructure-hub-shell .q-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.biostructure-hub-shell .q-badge.neutral {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+/* Data Provenance Footer */
+.biostructure-hub-shell .data-provenance-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.85rem 1rem;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(51, 65, 85, 0.45);
+  border-radius: 10px;
+  margin-top: auto;
+}
+
+.biostructure-hub-shell .provenance-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  flex-wrap: wrap;
+}
+
+.biostructure-hub-shell .provenance-item a {
+  color: #38bdf8;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: color 0.18s ease;
+}
+
+.biostructure-hub-shell .provenance-item a:hover {
+  color: #7dd3fc;
+  text-decoration: underline;
+}
+
+.biostructure-hub-shell .citation-title-snippet {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-style: italic;
+  line-height: 1.35;
+  margin-top: 0.1rem;
+}
+
+.biostructure-hub-shell .citation-title-snippet a {
+  color: #38bdf8;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-style: normal;
+}

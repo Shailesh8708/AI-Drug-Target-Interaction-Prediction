@@ -57,11 +57,11 @@ export default function OverviewClosingSection({ navigate }) {
             <span>AUTHENTIC PDB & UNIPROT INTEGRATIONS</span>
           </div>
           <div className="meta-badge-item">
-            <span className="meta-dot cyan" />
+            <span className="meta-dot rust" />
             <span>DTI MORGAN TOPOLOGICAL PIPELINE</span>
           </div>
           <div className="meta-badge-item">
-            <span className="meta-dot violet" />
+            <span className="meta-dot amber" />
             <span>PhD-LEVEL BIOPHYSICAL ANALYSIS</span>
           </div>
         </div>
